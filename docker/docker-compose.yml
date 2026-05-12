@@ -1,0 +1,190 @@
+# Webx 微服务 Docker Compose 配置
+#
+# 注意：此配置文件仅用于启动微服务（People, Gateway）。
+# 需要先确保 webx-network 网络已创建，并分别启动所需的中间件。
+#
+# 1. 创建共享网络:
+#    docker network create webx-network
+# 2. 更新镜像 (按需):
+#    docker compose pull people
+# 3. 启动服务 (保留日志):
+#    docker compose up -d people
+# 4. 停止微服务:
+#    docker compose stop people
+#    docker compose down people
+# 5. 查看日志:
+#    docker compose logs -f people
+
+version: '3.9'
+
+# 日志轮转配置：每个服务最多保留 500MB 日志（5 × 100MB）
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "100m"
+    max-file: "5"
+
+services:
+  # ==================== 基础设施 ====================
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./sites:/srv
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - webx-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - APP_USER=${APP_USER:-webx}
+      - APP_PASSWORD=${APP_PASSWORD}
+      - APP_DB=${APP_DB:-webx_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    networks:
+      - webx-network
+    expose:
+      - "5432"
+    ports:
+      - "127.0.0.1:5432:5432"
+    logging: *default-logging
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: redis
+    restart: unless-stopped
+    command: [ "redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}" ]
+    volumes:
+      - redis_data:/data
+    networks:
+      - webx-network
+    expose:
+      - "6379"
+    ports:
+      - "127.0.0.1:6379:6379"
+    logging: *default-logging
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-}", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nats:
+    image: nats:2.9-alpine
+    container_name: nats
+    restart: unless-stopped
+    command: [ "-js", "--store_dir=/data", "--http_port=8222", "--user", "${NATS_USER:-natsuser}", "--pass", "${NATS_PASSWORD}" ]
+    volumes:
+      - nats_data:/data
+    networks:
+      - webx-network
+    expose:
+      - "4222"
+      - "8222"
+    ports:
+      - "127.0.0.1:4222:4222"
+    logging: *default-logging
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==================== 微服务 ====================
+
+  # People 服务 - 用户管理
+  people:
+    image: public.ecr.aws/i4z7j7s0/webx-people:latest
+    container_name: webx-people
+    restart: unless-stopped
+    networks:
+      - webx-network
+    expose:
+      - "50051"
+    environment:
+      - GRPC_ADDR=:50051
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - MIGRATE=${MIGRATE:-true}
+      - DB_DRIVER=postgres
+      - DB_DSN=host=postgres port=5432 user=${APP_USER:-webx} password=${APP_PASSWORD} dbname=${APP_DB:-webx_db} sslmode=disable TimeZone=Asia/Shanghai
+      - REDIS_ADDR=redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=${REDIS_DB:-0}
+      - SKIP_VERIFY=${SKIP_VERIFY:-false}
+    logging: *default-logging
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "50051" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # Gateway 服务 - API 网关
+  gateway:
+    image: public.ecr.aws/i4z7j7s0/webx-gateway:latest
+    container_name: webx-gateway
+    restart: unless-stopped
+    networks:
+      - webx-network
+    ports:
+      - "8080:8080"
+    environment:
+      - HTTP_ADDR=:8080
+      - PEOPLE_GRPC_ADDR=people:50051
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - ENABLE_SWAGGER=${ENABLE_SWAGGER:-false}
+    logging: *default-logging
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8080/docs/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    depends_on:
+      - people
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  redis_data:
+  nats_data:
+
+networks:
+  webx-network:
+    external: true
+    name: webx-network
