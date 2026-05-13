@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package people.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "people/v1/models.proto";
+
+option go_package = "github.com/dafsic/webx/proto_go/people/v1;peoplev1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Webx People API";
+    version: "v1";
+    description: "用户与认证相关的 gRPC + REST 接口。";
+  };
+};
+
+// PeopleService manages user accounts and authentication.
+service PeopleService {
+  // Login verifies credentials and returns a JWT bound to a Redis-backed
+  // session id (jti).
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/people:login"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "登录"
+      tags: "people"
+    };
+  }
+}

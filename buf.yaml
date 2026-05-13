@@ -1,0 +1,12 @@
+# For commits you don't want this directory to lint.
+version: v2
+modules:
+  - path: proto
+    excludes:
+      - proto/third_party
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - FILE
