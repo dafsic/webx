@@ -1,338 +1,192 @@
+// Package postgres provides a sqlx + sql-migrate + squirrel based PostgreSQL
+// module for the webx framework.
+//
+// Driver: github.com/jackc/pgx/v5/stdlib (registered as "pgx").
+//
+// CLI flags registered (all with matching POSTGRES_* environment variables):
+//
+//	--postgres-dsn                  DSN (default: localhost dev DSN)
+//	--postgres-max-open-conns       max open connections (default 25)
+//	--postgres-max-idle-conns       max idle connections (default 5)
+//	--postgres-conn-max-lifetime    conn max lifetime   (default 30m)
+//	--postgres-conn-max-idle-time   conn max idle time  (default 5m)
+//	--postgres-ping-timeout         startup ping timeout (default 5s; 0 disables)
+//	--postgres-migrate              run "up" migrations on startup (default false)
+//	--postgres-migrate-dir          directory with migration files (default ./migrations)
+//	--postgres-migrate-table        migration tracking table (default migrations)
+//	--postgres-migrate-schema       migration tracking schema (default public)
+//
+// Provided into the fx graph:
+//
+//	postgres.Database  — high-level wrapper (Ping/Session/Transact/Close)
+//	*sqlx.DB           — underlying handle, for code that needs it directly
+//	*postgres.Migrator — sql-migrate driver bound to this database
+//	*postgres.Config   — resolved configuration
+//
+// Lifecycle:
+//
+//	OnStart: Ping (subject to PingTimeout), then optional auto-migrate.
+//	OnStop:  Close the connection pool.
+//
+// Extending: callers can contribute extra Options via the
+// group:"postgres_options" fx group.
 package postgres
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"io/ioutil"
-	"regexp"
-	"strconv"
-	"time"
+	"log/slog"
 
-	"github.com/UrbanCompass/instrumentedsql"
-	"github.com/lib/pq"
-	ddsql "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
-	"gopkg.in/yaml.v2"
-
-	"compass.com/app"
-	"compass.com/app/flags"
-	"compass.com/app/health"
-	"compass.com/app/resources"
-	"compass.com/app/secrets"
-	datadog "compass.com/datadog_statsd"
+	"github.com/dafsic/webx/app"
+	_ "github.com/jackc/pgx/v5/stdlib" // register "pgx" driver
+	"github.com/jmoiron/sqlx"
+	"github.com/urfave/cli/v2"
+	"go.uber.org/fx"
 )
 
-const instrumentedPgDriverName = "instrumented-postgres"
+// Module is the postgres module.
+type Module struct{}
 
-var (
-	log = app.Logger()
-	// Default configuration values for the supported databases.
-	databaseMappingFilename        = "postgres/database_mapping.yaml"
-	databaseMappingResourceDefault = resources.Require(databaseMappingFilename)
-)
+// New returns a new postgres Module.
+func New() *Module { return &Module{} }
 
-type DbConf struct {
-	Enabled           bool                                `yaml:"-"`
-	Trace             bool                                `yaml:"-"`
-	Hostname          string                              `yaml:"hostname"`
-	Port              int32                               `yaml:"port"`
-	DbName            string                              `yaml:"dbname"`
-	SslMode           string                              `yaml:"sslmode"`
-	UsernameSrc       flags.StringFromCLIOrSecretsManager `yaml:"-"`
-	UsernameKey       string                              `yaml:"username"`
-	Username          string                              `yaml:"-"`
-	PasswordSrc       flags.StringFromCLIOrSecretsManager `yaml:"-"`
-	PasswordKey       string                              `yaml:"password"`
-	Password          string                              `yaml:"-"`
-	DefaultSearchPath string                              `yaml:"default_searchpath"`
-	MaxIdleConns      int                                 `yaml:"-"`
-	MaxOpenConns      int                                 `yaml:"-"`
-	MaxConnLifetime   time.Duration                       `yaml:"-"`
-	DockerContainer   string                              `yaml:"-"`
-	StatementTimeout  int                                 `yaml:"-"`
+// Name implements app.Module.
+func (m *Module) Name() string { return ModuleName }
+
+// Configure implements app.Module.
+func (m *Module) Configure(a *cli.App) {
+	a.Flags = append(a.Flags,
+		&cli.StringFlag{
+			Name:    FlagDSN,
+			Value:   DefaultDSN,
+			EnvVars: []string{EnvDSN},
+			Usage:   "PostgreSQL DSN",
+		},
+		&cli.IntFlag{
+			Name:    FlagMaxOpenConns,
+			Value:   DefaultMaxOpenConns,
+			EnvVars: []string{EnvMaxOpenConns},
+			Usage:   "Maximum number of open connections",
+		},
+		&cli.IntFlag{
+			Name:    FlagMaxIdleConns,
+			Value:   DefaultMaxIdleConns,
+			EnvVars: []string{EnvMaxIdleConns},
+			Usage:   "Maximum number of idle connections",
+		},
+		&cli.DurationFlag{
+			Name:    FlagConnMaxLifetime,
+			Value:   DefaultConnMaxLifetime,
+			EnvVars: []string{EnvConnMaxLifetime},
+			Usage:   "Maximum lifetime of a connection",
+		},
+		&cli.DurationFlag{
+			Name:    FlagConnMaxIdleTime,
+			Value:   DefaultConnMaxIdleTime,
+			EnvVars: []string{EnvConnMaxIdleTime},
+			Usage:   "Maximum idle time of a connection",
+		},
+		&cli.DurationFlag{
+			Name:    FlagPingTimeout,
+			Value:   DefaultPingTimeout,
+			EnvVars: []string{EnvPingTimeout},
+			Usage:   "Startup ping timeout (0 disables)",
+		},
+		&cli.StringFlag{
+			Name:    FlagMigrate,
+			Value:   DefaultMigrate,
+			EnvVars: []string{EnvMigrate},
+			Usage:   "Run migrations on startup: off | up | down",
+		},
+		&cli.StringFlag{
+			Name:    FlagMigrateDir,
+			Value:   DefaultMigrateDir,
+			EnvVars: []string{EnvMigrateDir},
+			Usage:   "Directory containing sql-migrate files",
+		},
+		&cli.StringFlag{
+			Name:    FlagMigrateTable,
+			Value:   DefaultMigrateTable,
+			EnvVars: []string{EnvMigrateTable},
+			Usage:   "Migration tracking table",
+		},
+		&cli.StringFlag{
+			Name:    FlagMigrateSchema,
+			Value:   DefaultMigrateSchema,
+			EnvVars: []string{EnvMigrateSchema},
+			Usage:   "Migration tracking schema",
+		},
+	)
 }
 
-// ResolveSecrets uses secretsManager to resolve the secret members of a DbConf.
-func (conf *DbConf) ResolveSecrets(secretsManager secrets.SecretsClient) error {
-	password, err := conf.PasswordSrc.GetValue(secretsManager)
-	if err != nil {
-		return err
+// Install implements app.Module.
+func (m *Module) Install(ctx app.Context) fx.Option {
+	cliOpts := []Option{
+		WithDSN(ctx.String(FlagDSN)),
+		WithMaxOpenConns(ctx.Int(FlagMaxOpenConns)),
+		WithMaxIdleConns(ctx.Int(FlagMaxIdleConns)),
+		WithConnMaxLifetime(ctx.Duration(FlagConnMaxLifetime)),
+		WithConnMaxIdleTime(ctx.Duration(FlagConnMaxIdleTime)),
+		WithPingTimeout(ctx.Duration(FlagPingTimeout)),
+		WithMigrate(ctx.String(FlagMigrate)),
+		WithMigrateDir(ctx.String(FlagMigrateDir)),
+		WithMigrateTable(ctx.String(FlagMigrateTable)),
+		WithMigrateSchema(ctx.String(FlagMigrateSchema)),
 	}
-	conf.Password = password
-	username, err := conf.UsernameSrc.GetValue(secretsManager)
-	if err != nil {
-		return err
-	}
-	conf.Username = username
-	return nil
+
+	return fx.Options(
+		fx.Supply(fx.Annotate(
+			cliOpts,
+			fx.ResultTags(`group:"`+OptionsGroup+`,flatten"`),
+		)),
+		fx.Provide(fx.Annotate(
+			NewConfig,
+			fx.ParamTags(`group:"`+OptionsGroup+`"`),
+		)),
+		fx.Provide(
+			NewDatabase,
+			NewMigrator,
+			func(db Database) *sqlx.DB { return db.Session() },
+		),
+		fx.Invoke(registerLifecycle),
+	)
 }
 
-// postgres.Module provides live connections to a set of Postgres Databases.
-// It should be Installed to the app in the main, and then the application
-// main can use the databases.
-// Each database name that is used in DbNames must correspond to an entry
-// in the databaseMappingFilename YAML.
-// For each database that is configured, the postgres.Module will install
-// command-line flags named --pg-<dbname>* that can be used to override
-// the default config from the databaseMappingFilename YAML.
-type Module struct {
-	DbNames           []string
-	DbMappingResource *resources.Resource
-	nameToDbConf      map[string]*DbConf
-	DataDog           *datadog.Module
-	ddServiceName     string
-}
-
-func (m *Module) Priority() app.ModulePriority {
-	return app.ModulePriorityHigh
-}
-
-// Load the defaults from the YAML file
-func (m *Module) loadDefaults() (map[string]*DbConf, error) {
-	r, err := m.DbMappingResource.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-	body, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
-	dbConfDefaults := map[string]*DbConf{}
-	err = yaml.Unmarshal(body, &dbConfDefaults)
-	if err != nil {
-		return nil, err
-	}
-	return dbConfDefaults, nil
-}
-
-// An instrumented sql.Logger that writes all queries to Log info.
-type TraceLogger struct{}
-
-func (l TraceLogger) Log(ctx context.Context, msg string, keyvals ...interface{}) {
-	// TODO(ugo): Maybe this can be made much prettier for postgres only.
-	log.Infof("TRACE: %s %v", msg, keyvals)
-}
-
-// dbConf returns the DbConf for a database that is configured in the YAML file.
-// All the values are set according to the defaults.
-func (m *Module) dbConf(dbName string) (*DbConf, error) {
-	dbConfDefaults, err := m.loadDefaults()
-	if err != nil {
-		return nil, err
-	}
-	defaults := dbConfDefaults[dbName]
-	if defaults == nil {
-		return nil, fmt.Errorf("no defaults defined for database name '%s' in resource '%s'",
-			dbName, m.DbMappingResource.Path())
-	}
-	result := &DbConf{}
-	result.Enabled = true
-	result.Trace = false
-	result.Hostname = defaults.Hostname
-	result.Port = defaults.Port
-	result.DbName = defaults.DbName
-	result.SslMode = defaults.SslMode
-	if err = result.UsernameSrc.Set(defaults.UsernameKey); err != nil {
-		return nil, err
-	}
-	if err = result.PasswordSrc.Set(defaults.PasswordKey); err != nil {
-		return nil, err
-	}
-	result.DefaultSearchPath = defaults.DefaultSearchPath
-	result.MaxIdleConns = 2
-	result.MaxOpenConns = 50
-	result.MaxConnLifetime = 30 * time.Minute
-	result.StatementTimeout = 0
-	return result, nil
-}
-
-func (m *Module) Configure(conf app.Configurator) error {
-	if m.DbMappingResource == nil {
-		m.DbMappingResource = databaseMappingResourceDefault
-	}
-
-	conf.Install(&datadog.Module{})
-
-	sql.Register(instrumentedPgDriverName, instrumentedsql.WrapDriver(&pq.Driver{}, instrumentedsql.WithLogger(TraceLogger{})))
-
-	conf.Install(&secrets.Module{})
-	conf.Install(&health.Module{})
-	dbConfDefaults, err := m.loadDefaults()
-	if err != nil {
-		return err
-	}
-	m.nameToDbConf = make(map[string]*DbConf)
-	var validDbName = regexp.MustCompile(`^[A-Za-z0-9_\-]+$`)
-	for _, dbName := range m.DbNames {
-		if !validDbName.MatchString(dbName) {
-			log.Fatalf("Invalid database name '%s'", dbName)
-		}
-		defaults := dbConfDefaults[dbName]
-		if defaults == nil {
-			log.Fatalf("No defaults defined for database name '%s' in resource '%s'",
-				dbName, m.DbMappingResource.Path())
-		}
-		singleDbConf := DbConf{}
-		m.nameToDbConf[dbName] = &singleDbConf
-		conf.Flag("pg-"+dbName+"-enable", fmt.Sprintf("Enable access to the %s db.", dbName)).
-			Default("true").
-			BoolVar(&singleDbConf.Enabled)
-		conf.Flag("pg-"+dbName+"-trace", fmt.Sprintf("Trace to log info queries sent to the %s db.", dbName)).
-			Default("false").
-			BoolVar(&singleDbConf.Trace)
-		conf.Flag("pg-"+dbName+"-hostname", fmt.Sprintf("The hostname for the %s db.", dbName)).
-			Default(defaults.Hostname).
-			StringVar(&singleDbConf.Hostname)
-		conf.Flag("pg-"+dbName+"-port", fmt.Sprintf("The port for the %s db.", dbName)).
-			Default(strconv.Itoa(int(defaults.Port))).
-			Int32Var(&singleDbConf.Port)
-		conf.Flag("pg-"+dbName+"-dbname", fmt.Sprintf("The dbname for the %s db.", dbName)).
-			Default(defaults.DbName).
-			StringVar(&singleDbConf.DbName)
-		conf.Flag("pg-"+dbName+"-sslmode", fmt.Sprintf("The sslmode for the %s db.", dbName)).
-			Default(defaults.SslMode).
-			StringVar(&singleDbConf.SslMode)
-		conf.Flag("pg-"+dbName+"-username", fmt.Sprintf("The username for the %s db.", dbName)).
-			Default(defaults.UsernameKey).
-			SetValue(&singleDbConf.UsernameSrc)
-		conf.Flag("pg-"+dbName+"-password", fmt.Sprintf("The password for the %s db.", dbName)).
-			Default(defaults.PasswordKey).
-			SetValue(&singleDbConf.PasswordSrc)
-		conf.Flag("pg-"+dbName+"-default-searchpath", fmt.Sprintf("The default postgres searchpath for the %s db.", dbName)).
-			Default(defaults.DefaultSearchPath).
-			StringVar(&singleDbConf.DefaultSearchPath)
-		conf.Flag("pg-"+dbName+"-max-idle-conns", fmt.Sprintf("The maximum number of idle connections for %s db.", dbName)).
-			Default("2").
-			IntVar(&singleDbConf.MaxIdleConns)
-		conf.Flag("pg-"+dbName+"-max-open-conns", fmt.Sprintf("The maximum number of open connections for %s db (0 means unlimited).", dbName)).
-			Default("50").
-			IntVar(&singleDbConf.MaxOpenConns)
-		conf.Flag("pg-"+dbName+"-max-conn-lifetime", fmt.Sprintf("The maximum amount of time a connection may be reused for %s db (0 means unlimited).", dbName)).
-			Default("30m").
-			DurationVar(&singleDbConf.MaxConnLifetime)
-		conf.Flag("pg-"+dbName+"-docker-container", fmt.Sprintf("The name of the docker container that is running %s. Used for pg_dump", dbName)).
-			Default("").
-			StringVar(&singleDbConf.DockerContainer)
-		conf.Flag("pg-"+dbName+"-statement-timeout", fmt.Sprintf("Abort any statement that takes more than the specified amount of time for the %s db (0 means no timeout, unit in millisecond).", dbName)).
-			Default(strconv.Itoa(defaults.StatementTimeout)).
-			IntVar(&singleDbConf.StatementTimeout)
-	}
-
-	conf.Flag("pg-dd-service-name", "Override datadog postgres service name. Default is {app.Name}.db").
-		Default("").
-		StringVar(&m.ddServiceName)
-	return nil
-}
-
-func (m *Module) ProvideHealthCheckSequence(dbs *Databases) []*health.Check {
-	names := dbs.Names()
-	result := make([]*health.Check, 0, len(names))
-	for _, name := range names {
-		db := dbs.Get(name)
-		if db.IsEnabled() {
-			result = append(result, &health.Check{
-				Name:  "Postgres-" + name,
-				Check: db.Session().Ping,
-			})
-		}
-	}
-	return result
-}
-
-// DbConfigs is a map of DB name to DbConf.
-type DbConfigs map[string]*DbConf
-
-// ProvidePostgresConfigs provides the postgres configuration for all the databases
-// that have been configured in this Module.
-// This configuration is "fully resolved" in that any secret parameter will have been resolved.
-//
-// Applications that want to use sqlx (our most standard way of using postgres) should not use
-// this, and should prefer injecting directly a *Databases (see ProvidePostgresDatabases).
-func (m *Module) ProvidePostgresConfigs(secretsManager secrets.SecretsClient) (DbConfigs, error) {
-	for _, conf := range m.nameToDbConf {
-		if err := conf.ResolveSecrets(secretsManager); err != nil {
-			return nil, err
-		}
-	}
-	return m.nameToDbConf, nil
-}
-
-// ProvidePostgresDatabases provides an already-dialed Databases object.
-func (m *Module) ProvidePostgresDatabases(secretsManager secrets.SecretsClient) (*Databases, error) {
-	// TODO(ugo): maybe it would be nice to just inject a DbConfigs object here, so
-	// as to not replicate the code from ProvidePostgresConfigs.
-	for _, conf := range m.nameToDbConf {
-		if err := conf.ResolveSecrets(secretsManager); err != nil {
-			return nil, err
-		}
-	}
-	result := &Databases{items: make(map[string]Database)}
-	for n, c := range m.nameToDbConf {
-		db, err := dialDatabase(n, c, m.DataDog.Enabled)
-		if err != nil {
-			return nil, err
-		}
-		if db != nil {
-			result.items[n] = db
-		}
-	}
-	return result, nil
-}
-
-func (m *Module) Start(dd *datadog.Module) {
-	m.DataDog = dd
-	if dd.Enabled {
-		ddsql.Register(instrumentedPgDriverName, instrumentedsql.WrapDriver(&pq.Driver{}, instrumentedsql.WithLogger(TraceLogger{})))
-
-		// This is the case where the command line arg is not set. We fall back to app.Name here (app.Name is not available in the Configure method)
-		if m.ddServiceName == "" {
-			m.ddServiceName = app.Name
-		}
-		// Current behavior is to default to postgres.db in the Register function
-		// gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql/sql.go
-		// If this flag is not set, we will default to postgres. Keeping the same behavior of appending ".db"
-		ddsql.Register("postgres", &pq.Driver{}, ddsql.WithServiceName(fmt.Sprintf("%s.db", m.ddServiceName)))
-	}
-}
-
-// LazyLoadedDatabases provides a way to connect to databases that are
-// configured in the YAML file but are not part of Module.DbNames
-// It is useful for example for programs that do not know in advance which
-// databases they may connect to.
-type LazyLoadedDatabases struct {
-	m              *Module
-	secretsManager secrets.SecretsClient
-}
-
-// ProvideLazyLoadedPostgresDatabases provides an instance of LazyLoadedDatabases.
-func (m *Module) ProvideLazyLoadedPostgresDatabases(secretsManager secrets.SecretsClient) *LazyLoadedDatabases {
-	return &LazyLoadedDatabases{
-		m:              m,
-		secretsManager: secretsManager,
-	}
-}
-
-// DialOneDatabase dials a database that is configured in the YAML file but was
-// not configured as part of Module.DbNames
-// It uses the customizeConf func (if non nil) to modify in place the configuration
-// i.e. to change the configuration values from their defaults.
-// Calling this method multiple times will produce a new connection each time,
-// clients are expected to cache those connections to avoid resource leakage.
-func (dbs *LazyLoadedDatabases) DialOneDatabase(dbName string, customizeConf func(*DbConf)) (Database, error) {
-	if _, ok := dbs.m.nameToDbConf[dbName]; ok {
-		return nil, fmt.Errorf("Database %s is part of the postgres.Module DbNames (%v). Access it using the injected *Databases.",
-			dbName, dbs.m.DbNames)
-	}
-	conf, err := dbs.m.dbConf(dbName)
-	if err != nil {
-		return nil, err
-	}
-	if customizeConf != nil {
-		customizeConf(conf)
-	}
-	if err = conf.ResolveSecrets(dbs.secretsManager); err != nil {
-		return nil, err
-	}
-	return dialDatabase(dbName, conf, dbs.m.DataDog.Enabled)
+// registerLifecycle wires Ping, optional auto-migration, and Close into the
+// fx lifecycle. The *slog.Logger is supplied by the logs module.
+func registerLifecycle(lc fx.Lifecycle, db Database, mig *Migrator, cfg *Config, logger *slog.Logger) {
+	lc.Append(fx.Hook{
+		OnStart: func(startCtx context.Context) error {
+			if cfg.PingTimeout > 0 {
+				pingCtx, cancel := context.WithTimeout(startCtx, cfg.PingTimeout)
+				defer cancel()
+				if err := db.Ping(pingCtx); err != nil {
+					_ = db.Close()
+					return err
+				}
+			}
+			switch cfg.Migrate {
+			case "", MigrateOff:
+			case MigrateUp:
+				logger.Info("postgres: auto-migrate up")
+				if _, err := mig.Up(); err != nil {
+					_ = db.Close()
+					return fmt.Errorf("postgres: auto-migrate up: %w", err)
+				}
+			case MigrateDown:
+				logger.Info("postgres: auto-migrate down")
+				if _, err := mig.Down(); err != nil {
+					_ = db.Close()
+					return fmt.Errorf("postgres: auto-migrate down: %w", err)
+				}
+			default:
+				_ = db.Close()
+				return fmt.Errorf("postgres: invalid migrate mode %q", cfg.Migrate)
+			}
+			return nil
+		},
+		OnStop: func(_ context.Context) error {
+			return db.Close()
+		},
+	})
 }

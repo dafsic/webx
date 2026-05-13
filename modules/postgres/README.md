@@ -1,310 +1,215 @@
-# Package: postgres
+# postgres
 
-This package provides the basic plumbing for integrating a Go application with a
-PostgreSQL database. The package provides:
-  * convenient methods for generating SQL for common CRUD operations using struct reflection
-  * transaction management
-  * [wrappers](./executor/executor.go) around the
-    [github.com/jmoiron/sqlx](https://godoc.org/github.com/jmoiron/sqlx)
-    package which extends the core [database/sql](https://godoc.org/database/sql)
-    package
-  * [wrappers](./sql.go) around the
-    [github.com/Masterminds/squirrel](https://godoc.org/github.com/Masterminds/squirrel)
-    SQL query builder package
-  * mocks for the above
-  * Schema Migrations integrated as an Application Module supported by
-    [github.com/rubenv/sql-migrate](https://godoc.org/github.com/rubenv/sql-migrate)
-  * DataDog instrumentation of database queries
+基于 [`sqlx`](https://github.com/jmoiron/sqlx) + [`sql-migrate`](https://github.com/rubenv/sql-migrate) + [`squirrel`](https://github.com/Masterminds/squirrel) + [`pgx/v5/stdlib`](https://github.com/jackc/pgx) 的 PostgreSQL 模块。
 
-## Making Changes
-Get changes reviewed in [#postgres](https://compass-tech.slack.com/archives/CA0L2UMHN) (you can tag `@postgres-go-maintainers`).
+## 特性
 
-## Docs
-Checkout general Postgres documentation on Confluence:
-* [Postgres @ Compass](https://compass-tech.atlassian.net/wiki/spaces/ENG/pages/887128159/Postgres+at+Compass)
-* [Postgres Best Practices](https://compass-tech.atlassian.net/wiki/spaces/ENG/pages/781453130/Postgres+Best+Practices)
-* [Postgres Deployment Playbook](https://compass-tech.atlassian.net/wiki/spaces/ENG/pages/3214508106/Postgres+Deployment+Playbook)
-* [Postgres Runbooks](https://compass-tech.atlassian.net/wiki/spaces/ENG/pages/3214704706/Postgres+Runbooks)
-* [Datadog DB Monitoring](https://compass-tech.atlassian.net/wiki/spaces/ENG/pages/3019212408/Datadog+Database+Monitoring)
+- 固定使用 `pgx/v5/stdlib` 驱动（`database/sql` 注册名 `pgx`），不暴露 driver 选择。
+- 提供 `Database` 接口，封装 `Ping / Session / Transact / TransactReadOnly / Close`；事务在 panic 或 error 时自动回滚。
+- 内置 `Migrator`，支持启动期 `up` / `down` 自动迁移。
+- 内置 squirrel 构建器，PostgreSQL `$N` 占位符已预配置。
+- 启动期 `PING` 探测，连不上即 fail-fast；退出时自动 `Close()`。
+- CLI flag + 环境变量 + 函数式选项 + `fx` group 四种配置入口。
 
-## Installation
+## 依赖
 
-Checkout [these instructions](https://compass-tech.atlassian.net/wiki/spaces/ENG/pages/676429897)
-for installing Postgres on your machine.
+模块依赖 [logs](../logs/README.md) 提供的 `*slog.Logger`。使用时务必同时安装：
 
-Follow [these instructions](https://github.com/UrbanCompass/urbancompass/tree/master/src/python3/uc/postgres/dbs_setup)
-to initially set up your new database.
-
-Use the [Reference Service](https://github.com/UrbanCompass/urbancompass/tree/master/src/go/compass.com/reference_todos)
-as an example for integrating this package into a new Go service.  We attempt to keep this service updated with
-the latest conventions and best practices.
-
-__*** Important: For Tier-1 and Tier-2 Services ***__ use a separate cronjob for running db migrations that runs after hours. See example in Reference Service [migratord](https://github.com/UrbanCompass/urbancompass/blob/master/src/go/compass.com/reference_todos/cmd/migratord/main.go#L2) and corresponding [Pipelines app](https://github.com/UrbanCompass/urbancompass/tree/bcae53cc7bb361d82a1f040962c1ca4fe84ebeac/docker/apps/reference_todosmigratorcronjob)
-
-Minimal integration for a connection to your database and schema migrations
-might look something like below.  Note that this runs any new db migrations just before the service starts up which is only recommended for Tier 3+ services, and not for Tier-1 or Tier-2 services:
 ```go
-// main.go
+a.Install(logs.New(), postgres.New())
+```
+
+## CLI
+
+| Flag | Env | 默认 | 说明 |
+| --- | --- | --- | --- |
+| `--postgres-dsn` | `POSTGRES_DSN` | `host=localhost port=5432 user=postgres password=postgres dbname=postgres sslmode=disable` | 连接串 |
+| `--postgres-max-open-conns` | `POSTGRES_MAX_OPEN_CONNS` | `25` | 最大连接数 |
+| `--postgres-max-idle-conns` | `POSTGRES_MAX_IDLE_CONNS` | `5` | 空闲连接数 |
+| `--postgres-conn-max-lifetime` | `POSTGRES_CONN_MAX_LIFETIME` | `30m` | 连接最大寿命 |
+| `--postgres-conn-max-idle-time` | `POSTGRES_CONN_MAX_IDLE_TIME` | `5m` | 连接最大空闲 |
+| `--postgres-ping-timeout` | `POSTGRES_PING_TIMEOUT` | `5s` | 启动 `PING` 超时（`0` 跳过） |
+| `--postgres-migrate` | `POSTGRES_MIGRATE` | `off` | 启动迁移模式：`off` / `up` / `down` |
+| `--postgres-migrate-dir` | `POSTGRES_MIGRATE_DIR` | `./migrations` | 迁移文件目录 |
+| `--postgres-migrate-table` | `POSTGRES_MIGRATE_TABLE` | `migrations` | 迁移记录表 |
+| `--postgres-migrate-schema` | `POSTGRES_MIGRATE_SCHEMA` | `public` | 迁移记录表 schema |
+
+## 快速开始
+
+```go
 package main
 
 import (
-  "compass.com/app"
-  "compass.com/app/resources"
-  "compass.com/postgres"
-  "compass.com/postgres/migrator"
+    "log"
+
+    "github.com/dafsic/webx/app"
+    "github.com/dafsic/webx/modules/logs"
+    "github.com/dafsic/webx/modules/postgres"
 )
-var (
-  // Location of your database mapping file.  
-  databaseMappingFilename = "code_labs/todos/database_mapping.yaml"
-  // Note: resources.Require root path is "src/resources/com/urbancompass"
-  databaseMappingResource = resources.Require(databaseMappingFilename)
-  // These should match entries in your database mapping yaml.
-  databaseMigrator = "codelabs-todos-migrator"
-  databaseApi      = "codelabs-todos-api"  
-  // Location of the SQL database migration files for the service.
-  migrationFileSuffix = ".sql"
-  sqlMigrations = resources.RequireDir("code_labs/todos/migrations", &fileSuffix)
-
-  // Location of the prettied-up pgdump file autogenerated by the migrator every time new migrations are executed.
-  // Allows us to review the exact state of the schema (expected by the state of the repo) given all migrations are applied.
-  // Whenever we add new migration(s) we run them locally, ensure schema.sql is updated and looks good, and
-  // commit the changes with the migrations in our PR.  The changes to schema.sql indicate to code reviewers that
-  // we actually tested the migration, and it's resulting diff to the schema is acceptable.
-  schemaPath = filepath.Join(app.FindGitRoot(), "src", "go", "compass.com", "code_labs", "todos", "schema.sql")
-)
-
-type Application struct {
-  // ...
-}
-
-func (m *Application) Start(
-  postgresDbs *postgres.Databases,
-  migrator migrator.Migrator,
-) error {
-  // Runs schema migrations on startup if run with the optional migration flags
-  if m.EnableAnytimeMigrations {
-  	if err := migrator.Migrate(postgresDbs.Get(dbConnectionMigrator), migrations); err != nil {
-  	  return errors.Wrapf(err, "Failed to run migrations.")
-    }
-  }
-  if err := migrator.AssertNoPendingMigrations(postgresDbs.Get(dbConnectionMigrator), migrations); err != nil {
-    return err
-  }
-  
-  // ...
-}
 
 func main() {
-  app.Help("Implementation of the ToDos service").
-    Install(
-      &postgres.Module{
-        DbMappingResource: databaseMappingResource,
-        DbNames:           []string{databaseApi, databaseMigrator},
-      },
-      &migrator.Module{
-        SchemaPath:   schemaPath,
-        SchemaToDump: []string{"codelabs_todos"},
-      },
-    ).
-    Run(&Application{})
+    a := app.NewApplication("myservice", "demo")
+    a.Install(logs.New(), postgres.New())
+    if err := a.Run(); err != nil {
+        log.Fatal(err)
+    }
 }
 ```
 
-## Before Writing and Running Database Migrations
+```sh
+# 仅连接，不迁移
+./myservice --postgres-dsn="postgres://user:pass@127.0.0.1:5432/app?sslmode=disable"
 
-Before writing and running migrations, please familiarize yourself with
-potentially dangerous operations and avoid them.  Please refer to the
-checks and best practices at [github.com/ankane/strong_migrations](https://github.com/ankane/strong_migrations).
-We recommend using this a checklist for coding and code review. 
+# 启动时执行 up
+./myservice --postgres-migrate=up --postgres-migrate-dir=./migrations
 
-We are planning to add SQL linting to our CI process.
-See [AUTHZ-1932](https://compass-tech.atlassian.net/browse/AUTHZ-1932).
+# 回滚最近一步
+./myservice --postgres-migrate=down
 
-## Database Migrations
-
-Database schema migrations are supported via the
-[github.com/rubenv/sql-migrate](https://godoc.org/github.com/rubenv/sql-migrate) package.
-
-Applications need to `import "compass.com/postgres/migrator"` and create a
-directory for the application's migrations under
-[`src/resources/com/urbancompass/`](./src/resources/com/urbancompass/) where
-your migration files will be kept.
-
-See [sql-migrate documentation](https://godoc.org/github.com/rubenv/sql-migrate#hdr-Writing_migrations)
-for more information on writing migrations.
-
-Use the `--run-migrations` flag when starting the application to run the SQL
-migrations when starting the application.
-
-Example: `go run src/go/compass.com/reference_todos/cmd/todos/main.go
---run-migrations`
-
-To only run migrations without starting the application, use the `--migrate-only
-<direction> [steps]` flag.
-
-  * `--migrate-only up` will run any new migrations that have not yet
-been applied to the schema, then exit.
-  * `--migrate-only down` will run the `migrateDown` portion of the last applied
-    migration to rollback the migration.
-  * A number of `steps` can be provided to limit the number of migrations that
-    will be applied on a up or down migration.
-
-Example: `go run src/go/compass.com/reference_todos/cmd/todos/main.go
---migrate-only up`
-
-Use flag `--check-unknown-migrations` to enable the check between database gorp_migration table with 
-the migration files in the current code branch. By default, it is set to ignore unknown migrations to ensure service roll back 
-and count won't fail when already occurred migrations (as reflected in the db gorp_migrations table) do not exist in the current code branch. 
-
-# schema.sql file
-
-The migrator supports a SchemaToDump option that dumps the schema (prettied-up pgdump) to a file
-every time new migrations are completed.  This file allows us to review the exact state
-of the schema (expected by the state of the repo) given all migrations are applied.
-
-Whenever we add new migration(s) we run them locally, ensure schema.sql is updated and looks good, and
-commit the changes with the migrations in our PR.  The changes to schema.sql indicate to code reviewers that
-we actually tested the migration, and it's resulting diff to the schema is acceptable.
-
-# Documentation about database_mapping.yaml
-
-database_mapping.yaml is a resource file that gets bundled in our Go apps that use Postgres as 
-their database. It contains configuration for Postgres connections. For each yaml entry, its 
-key-value pairs correspond to `psql` arguments.
-
-The use of a shared `database_mapping.yaml` is deprecated.
-Please create your own yaml in a directory you own and use the same format.
-See [this PR](https://github.com/UrbanCompass/urbancompass/pull/28066) for example in Reference Service.
-
-## Conventions on what entries you should add for your service
-
-We have adopted the following convention, which helps streamline the developer workflow of
-easily spinning up new services. Make sure you followed the instructions in the db setup 
-[README](https://github.com/UrbanCompass/urbancompass/tree/master/src/python3/uc/postgres/dbs_setup).
-
-Add the following entries to database_mapping.yaml, replacing `tokens` with the name of your 
-service:
-
-```yaml
-tokens-api:
-  hostname: localhost
-  port: 5432
-  dbname: tokens
-  sslmode: disable
-  username: secret:compass.app.tokens.rds.credentials:api_username
-  password: secret:compass.app.tokens.rds.credentials:api_password
-  default_searchpath: tokens
-tokens-migrator:
-  hostname: localhost
-  port: 5432
-  dbname: tokens
-  sslmode: disable
-  username: secret:compass.app.tokens.rds.credentials:owner_username
-  password: secret:compass.app.tokens.rds.credentials:owner_password
-  default_searchpath: tokens
+# 环境变量
+POSTGRES_DSN=... POSTGRES_MIGRATE=up ./myservice
 ```
 
-Your service should use the `tokens-api` entry for reading from and writing to tables. It should
-use the `tokens-migrator` entry for executing database migrations. The permissioning in our setup 
-scripts is such that the user corresponding to `owner_username` (but not `api_username`) is 
-allowed to create tables on the schema. 
+## fx 提供的类型
 
-If you need another entry for an ETL to get connection configuration so that it can copy data 
-from your database, then add the following entry. Our setup script permissions this user to have 
-read-only permissions.
+| 类型 | 用途 |
+| --- | --- |
+| `postgres.Database` | 高层封装（推荐） |
+| `*sqlx.DB` | 底层句柄，需要原生 sqlx 操作时使用 |
+| `*postgres.Migrator` | 运行时手动触发迁移 |
+| `*postgres.Config` | 已解析配置 |
 
-```yaml
-tokens-etl:
-  hostname: localhost
-  port: 5432
-  dbname: tokens
-  sslmode: disable
-  username: secret:compass.app.tokens.rds.credentials:etl_username
-  password: secret:compass.app.tokens.rds.credentials:etl_password
-  default_searchpath: tokens
+```go
+import (
+    "context"
+
+    "github.com/dafsic/webx/modules/postgres"
+    "go.uber.org/fx"
+)
+
+fx.Invoke(func(db postgres.Database) error {
+    return db.Transact(context.Background(), func(tx *sqlx.Tx) error {
+        _, err := tx.Exec("INSERT INTO users(name) VALUES ($1)", "alice")
+        return err
+    })
+})
 ```
 
-Likewise, if a monitor needs an entry to get connection configuration, add
+## SQL 构建（squirrel）
 
-```yaml
-tokens-monitor:
-  hostname: localhost
-  port: 5432
-  dbname: tokens
-  sslmode: disable
-  username: secret:compass.app.tokens.rds.credentials:monitor_username
-  password: secret:compass.app.tokens.rds.credentials:monitor_password
-  default_searchpath: tokens
+模块的 `sql.go` 暴露了一组 PostgreSQL 预配置的 squirrel 入口：
+
+```go
+import (
+    "github.com/dafsic/webx/modules/postgres"
+    sq "github.com/Masterminds/squirrel"
+)
+
+q, args, err := postgres.ToSQL(
+    postgres.Select("id", "name").
+        From("users").
+        Where(sq.Eq{"active": true}).
+        OrderBy("id DESC").
+        Limit(10),
+)
+// q = `SELECT id, name FROM users WHERE active = $1 ORDER BY id DESC LIMIT 10`
 ```
 
-**DO NOT create any entries that use the admin username and password.** The admin credentials are 
-only to be used when spinning up the database instance and when running our admin script against it
-to create users/roles and set up permissions. The admin credentials have far too much permissions
-to use in your service, because it has the ability to create, alter, and delete users/roles and 
-their associated passwords and permissions, and your service doesn't need to do any of that. 
+可用函数：`Select / Insert / Update / Delete / ToSQL`，以及 `Builder`（裸 `sq.StatementBuilderType`，占位符已设置为 `sq.Dollar`）。
 
-```yaml
-# BAD!
-tokens-admin:
-  hostname: localhost
-  port: 5432
-  dbname: tokens
-  sslmode: disable
-  username: secret:compass.app.tokens.rds.credentials:admin_username
-  password: secret:compass.app.tokens.rds.credentials:admin_password
-  default_searchpath: tokens
+## 事务
+
+```go
+err := db.Transact(ctx, func(tx *sqlx.Tx) error {
+    if _, err := tx.Exec("..."); err != nil {
+        return err
+    }
+    if _, err := tx.Exec("..."); err != nil {
+        return err
+    }
+    return nil
+})
 ```
 
-You may see database_mapping.yaml entries for older services which do not follow these conventions, 
-because they predate the current version of our db setup scripts and the convention.   
+- `txFunc` 返回 error → 自动 `Rollback`。
+- `txFunc` panic → 自动 `Rollback` 后重新 panic。
+- 正常返回 → 自动 `Commit`，commit 失败的错误向外返回。
+- 只读事务：`db.TransactReadOnly(ctx, ...)`。
 
-## Considerations for default_searchpath
+## 迁移
 
-Please read [here](https://www.postgresql.org/docs/9.6/ddl-schemas.html) for more details about 
-default_searchpath. Every postgres database has a `public` schema. Keep in mind that the 
-`default_searchpath` matters, and you need to be mindful of what value you decide to put here and 
-mindful of changes to it, as the following example demonstrates.
+迁移文件遵循 [sql-migrate](https://github.com/rubenv/sql-migrate) 的格式，命名建议 `Vnnn__name.sql`：
 
-Suppose we have the following configuration in database_mapping.yaml. 
-```yaml
-deals-api:
-  hostname: localhost
-  port: 5432
-  dbname: deals
-  sslmode: disable
-  username: secret:compass.app.deals.rds.credentials:api_username
-  password: secret:compass.app.deals.rds.credentials:api_password
-  default_searchpath: deals,public
-deals-admin:
-  hostname: localhost
-  port: 5432
-  dbname: deals
-  sslmode: disable
-  username: secret:compass.app.deals.rds.credentials:admin_username
-  password: secret:compass.app.deals.rds.credentials:admin_password
-  default_searchpath: public
-deals-monitor:
-  hostname: localhost
-  port: 5432
-  dbname: deals
-  sslmode: disable
-  username: secret:compass.app.deals.rds.credentials:monitor_username
-  password: secret:compass.app.deals.rds.credentials:monitor_password
-  default_searchpath: deals,public
+```sql
+-- migrations/V001__init.sql
+
+-- +migrate Up
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+-- +migrate Down
+DROP TABLE users;
 ```
-Suppose that the deals service uses the `deals-admin` configuration for admin migrations (creating 
-schemas) and the `deals-api` configuration for all other migrations (creating or altering tables, 
-indices, etc.). The migrations library that we use, gorp, looks inside a table named 
-`gorp_migrations`, and looks at the entries to figure out whether it needs to run migrations or not. 
-So, admin migrations were recorded in `public.gorp_migrations` and other migrations were recorded in 
-`deals.gorp_migrations`. 
 
-I then erroneously changed the `default_searchpath` for `deals-admin` to `deals,public` instead of 
-`public`. The result of this was that when deals was run with the `--run-migrations` flag, the 
-admin migrations code would check `gorp_migrations` to see what migrations had already been run. 
-Because `default_searchpath: deals,public`, postgres first checks the `deals` schema to see if it 
-has `gorp_migrations` table. It does. So, the query happens on that table, where it does not 
-contain the record for the 1 admin migration that we have (the record is instead found in 
-`public.gorp_migrations`). So then our gorp library thinks it needs to run the migration, so it 
-does. The migration then attempted to `CREATE SCHEMA deals;`, but that schema already exists. So, 
-the deals service crashes upon startup. 
+启动期：
+
+| 模式 | 行为 |
+| --- | --- |
+| `off`（默认） | 不迁移 |
+| `up` | 应用所有 pending 迁移 |
+| `down` | 回滚最近一条已应用迁移 |
+
+启动期迁移失败会关闭连接池并把错误返回给 `fx`，进程退出。
+
+代码中手动触发：
+
+```go
+fx.Invoke(func(m *postgres.Migrator) error {
+    _, err := m.Up()
+    return err
+})
+```
+
+可用方法：`Up() / Down() / Status() ([]*migrate.MigrationRecord, error)`。
+
+## 扩展配置
+
+使用 `fx` group `postgres.OptionsGroup`（值 `"postgres_options"`）追加 `postgres.Option`：
+
+```go
+fx.Supply(fx.Annotate(
+    postgres.WithMaxOpenConns(100),
+    fx.ResultTags(`group:"`+postgres.OptionsGroup+`"`),
+))
+```
+
+可用选项：
+
+| 选项 | 说明 |
+| --- | --- |
+| `WithDSN(string)` | 连接串 |
+| `WithMaxOpenConns(int)` | 最大连接数 |
+| `WithMaxIdleConns(int)` | 空闲连接数 |
+| `WithConnMaxLifetime(time.Duration)` | 连接寿命 |
+| `WithConnMaxIdleTime(time.Duration)` | 连接空闲时间 |
+| `WithPingTimeout(time.Duration)` | 启动 ping 超时；`0` 跳过 |
+| `WithMigrate(string)` | `off` / `up` / `down` |
+| `WithMigrateDir(string)` | 迁移目录 |
+| `WithMigrateTable(string)` | 迁移记录表 |
+| `WithMigrateSchema(string)` | 迁移记录表 schema |
+
+## 生命周期
+
+- **OnStart**：`Ping`（受 `PingTimeout` 约束）→ 根据 `--postgres-migrate` 执行 `Up` / `Down` / 跳过。任一失败即关闭连接池并返回错误。
+- **OnStop**：`Close()`。
+
+## 文件组织
+
+- `comm.go` — 常量与默认值
+- `options.go` — `Config` 与函数式选项
+- `database.go` — `Database` 接口与实现
+- `sql.go` — squirrel 构建器辅助函数
+- `migrator.go` — sql-migrate 封装
+- `module.go` — `app.Module` 实现 + fx 生命周期接线
