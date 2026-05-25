@@ -27,20 +27,6 @@ import (
 const (
 	ModuleName = "gateway"
 
-	FlagPeopleAddr    = "people-grpc-addr"
-	FlagJWTSecret     = "jwt-secret"
-	FlagJWTTTL        = "jwt-ttl"
-	FlagJWTIssuer     = "jwt-issuer"
-	FlagSwaggerEnable = "swagger-enable"
-	FlagSwaggerFile   = "swagger-file"
-
-	EnvPeopleAddr    = "PEOPLE_GRPC_ADDR"
-	EnvJWTSecret     = "JWT_SECRET"
-	EnvJWTTTL        = "JWT_TTL"
-	EnvJWTIssuer     = "JWT_ISSUER"
-	EnvSwaggerEnable = "SWAGGER_ENABLE"
-	EnvSwaggerFile   = "SWAGGER_FILE"
-
 	DefaultPeopleAddr  = "people:50051"
 	DefaultJWTTTL      = 24 * time.Hour
 	DefaultJWTIssuer   = "webx-people"
@@ -60,23 +46,23 @@ func (m *Module) Name() string { return ModuleName }
 // Configure implements app.Module.
 func (m *Module) Configure(a *cli.App) {
 	a.Flags = append(a.Flags,
-		&cli.StringFlag{Name: FlagPeopleAddr, Value: DefaultPeopleAddr, EnvVars: []string{EnvPeopleAddr}, Usage: "people service gRPC target"},
-		&cli.StringFlag{Name: FlagJWTSecret, EnvVars: []string{EnvJWTSecret}, Usage: "JWT secret (must match people service)"},
-		&cli.DurationFlag{Name: FlagJWTTTL, Value: DefaultJWTTTL, EnvVars: []string{EnvJWTTTL}, Usage: "Expected token TTL (used for refresh policy)"},
-		&cli.StringFlag{Name: FlagJWTIssuer, Value: DefaultJWTIssuer, EnvVars: []string{EnvJWTIssuer}, Usage: "Expected token issuer"},
-		&cli.BoolFlag{Name: FlagSwaggerEnable, Value: true, EnvVars: []string{EnvSwaggerEnable}, Usage: "Expose /swagger UI + /swagger/swagger.json"},
-		&cli.StringFlag{Name: FlagSwaggerFile, Value: DefaultSwaggerFile, EnvVars: []string{EnvSwaggerFile}, Usage: "Path to merged openapi swagger.json"},
+		&cli.StringFlag{Name: "people-grpc-addr", Value: DefaultPeopleAddr, Usage: "people service gRPC target"},
+		&cli.StringFlag{Name: "jwt-secret", Usage: "JWT secret (must match people service)"},
+		&cli.DurationFlag{Name: "jwt-ttl", Value: DefaultJWTTTL, Usage: "Expected token TTL (used for refresh policy)"},
+		&cli.StringFlag{Name: "jwt-issuer", Value: DefaultJWTIssuer, Usage: "Expected token issuer"},
+		&cli.BoolFlag{Name: "swagger-enable", Value: true, Usage: "Expose /swagger UI + /swagger/swagger.json"},
+		&cli.StringFlag{Name: "swagger-file", Value: DefaultSwaggerFile, Usage: "Path to merged openapi swagger.json"},
 	)
 }
 
 // Install implements app.Module.
 func (m *Module) Install(ctx app.Context) fx.Option {
-	peopleAddr := ctx.String(FlagPeopleAddr)
-	secret := ctx.String(FlagJWTSecret)
-	ttl := ctx.Duration(FlagJWTTTL)
-	issuer := ctx.String(FlagJWTIssuer)
-	swaggerEnable := ctx.Bool(FlagSwaggerEnable)
-	swaggerFile := ctx.String(FlagSwaggerFile)
+	peopleAddr := ctx.String("people-grpc-addr")
+	secret := ctx.String("jwt-secret")
+	ttl := ctx.Duration("jwt-ttl")
+	issuer := ctx.String("jwt-issuer")
+	swaggerEnable := ctx.Bool("swagger-enable")
+	swaggerFile := ctx.String("swagger-file")
 
 	return fx.Options(
 		fx.Provide(func() (*authmd.Signer, error) { return authmd.New(secret, ttl, issuer) }),

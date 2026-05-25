@@ -32,27 +32,27 @@ func (m *Module) Name() string { return ModuleName }
 // Configure implements app.Module.
 func (m *Module) Configure(a *cli.App) {
 	a.Flags = append(a.Flags,
-		&cli.StringFlag{Name: FlagAddr, Value: DefaultAddr, EnvVars: []string{EnvAddr}, Usage: "HTTP listen address"},
-		&cli.StringFlag{Name: FlagMode, Value: DefaultMode, EnvVars: []string{EnvMode}, Usage: "gin mode: debug|release|test"},
-		&cli.DurationFlag{Name: FlagStopTimeout, Value: 10 * time.Second, EnvVars: []string{EnvStopTimeout}, Usage: "HTTP shutdown timeout"},
-		&cli.StringSliceFlag{Name: FlagTrustedProxies, EnvVars: []string{EnvTrustedProxies}, Usage: "Trusted upstream proxy CIDRs (repeat or comma-separated)"},
+		&cli.StringFlag{Name: "http-addr", Value: DefaultAddr, EnvVars: []string{"HTTP_ADDR"}, Usage: "HTTP listen address"},
+		&cli.StringFlag{Name: "gin-mode", Value: DefaultMode, EnvVars: []string{"GIN_MODE"}, Usage: "gin mode: debug|release|test"},
+		&cli.DurationFlag{Name: "http-stop-timeout", Value: 10 * time.Second, EnvVars: []string{"HTTP_STOP_TIMEOUT"}, Usage: "HTTP shutdown timeout"},
+		&cli.StringSliceFlag{Name: "http-trusted-proxies", EnvVars: []string{"HTTP_TRUSTED_PROXIES"}, Usage: "Trusted upstream proxy CIDRs (repeat or comma-separated)"},
 	)
 }
 
 // Install implements app.Module.
 func (m *Module) Install(ctx app.Context) fx.Option {
 	base := []Option{
-		WithAddr(ctx.String(FlagAddr)),
-		WithMode(ctx.String(FlagMode)),
-		WithStopTimeout(ctx.Duration(FlagStopTimeout)),
-		WithTrustedProxies(ctx.StringSlice(FlagTrustedProxies)),
+		WithAddr(ctx.String("http-addr")),
+		WithMode(ctx.String("gin-mode")),
+		WithStopTimeout(ctx.Duration("http-stop-timeout")),
+		WithTrustedProxies(ctx.StringSlice("http-trusted-proxies")),
 	}
 
 	return fx.Options(
 		fx.Provide(
 			fx.Annotate(
 				func(extras []Option) []Option { return extras },
-				fx.ParamTags(`group:"`+OptionsGroup+`"`),
+				fx.ParamTags(`group:"ginserver_options"`),
 			),
 			func(extras []Option) (*Config, error) {
 				cfg := defaultConfig()

@@ -10,10 +10,10 @@ import (
 type Config struct {
 	DSN string
 
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
-	ConnMaxIdleTime time.Duration
+	MaxConns        int32
+	MinConns        int32
+	MaxConnLifetime time.Duration
+	MaxConnIdleTime time.Duration
 
 	// PingTimeout bounds the connectivity check performed during fx OnStart.
 	// Zero disables the ping.
@@ -35,10 +35,10 @@ type Option func(*Config) error
 func NewConfig(opts ...Option) (*Config, error) {
 	cfg := &Config{
 		DSN:             DefaultDSN,
-		MaxOpenConns:    DefaultMaxOpenConns,
-		MaxIdleConns:    DefaultMaxIdleConns,
-		ConnMaxLifetime: DefaultConnMaxLifetime,
-		ConnMaxIdleTime: DefaultConnMaxIdleTime,
+		MaxConns:        DefaultMaxConns,
+		MinConns:        DefaultMinConns,
+		MaxConnLifetime: DefaultConnMaxLifetime,
+		MaxConnIdleTime: DefaultConnMaxIdleTime,
 		PingTimeout:     DefaultPingTimeout,
 		Migrate:         DefaultMigrate,
 		MigrateDir:      DefaultMigrateDir,
@@ -67,36 +67,36 @@ func WithDSN(dsn string) Option {
 	}
 }
 
-// WithMaxOpenConns caps the number of open connections.
-func WithMaxOpenConns(n int) Option {
+// WithMaxConns caps the number of connections in the pool.
+func WithMaxConns(n int32) Option {
 	return func(c *Config) error {
 		if n < 0 {
-			return fmt.Errorf("postgres: WithMaxOpenConns(%d) must be >= 0", n)
+			return fmt.Errorf("postgres: WithMaxConns(%d) must be >= 0", n)
 		}
-		c.MaxOpenConns = n
+		c.MaxConns = n
 		return nil
 	}
 }
 
-// WithMaxIdleConns caps the size of the idle connection pool.
-func WithMaxIdleConns(n int) Option {
+// WithMinConns sets the minimum number of idle connections kept in the pool.
+func WithMinConns(n int32) Option {
 	return func(c *Config) error {
 		if n < 0 {
-			return fmt.Errorf("postgres: WithMaxIdleConns(%d) must be >= 0", n)
+			return fmt.Errorf("postgres: WithMinConns(%d) must be >= 0", n)
 		}
-		c.MaxIdleConns = n
+		c.MinConns = n
 		return nil
 	}
 }
 
-// WithConnMaxLifetime sets database/sql ConnMaxLifetime.
-func WithConnMaxLifetime(d time.Duration) Option {
-	return func(c *Config) error { c.ConnMaxLifetime = d; return nil }
+// WithMaxConnLifetime sets the maximum lifetime of a pooled connection.
+func WithMaxConnLifetime(d time.Duration) Option {
+	return func(c *Config) error { c.MaxConnLifetime = d; return nil }
 }
 
-// WithConnMaxIdleTime sets database/sql ConnMaxIdleTime.
-func WithConnMaxIdleTime(d time.Duration) Option {
-	return func(c *Config) error { c.ConnMaxIdleTime = d; return nil }
+// WithMaxConnIdleTime sets the maximum idle time before a connection is evicted.
+func WithMaxConnIdleTime(d time.Duration) Option {
+	return func(c *Config) error { c.MaxConnIdleTime = d; return nil }
 }
 
 // WithPingTimeout bounds the startup ping. Use 0 to disable the check.

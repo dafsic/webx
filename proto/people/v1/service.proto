@@ -12,21 +12,58 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   info: {
     title: "Webx People API";
     version: "v1";
-    description: "用户与认证相关的 gRPC + REST 接口。";
+    description: "EVM 钱包用户认证与 RBAC 权限 gRPC + REST 接口。";
   };
 };
 
-// PeopleService manages user accounts and authentication.
+// PeopleService manages EVM wallet accounts, EIP-712 authentication and RBAC.
 service PeopleService {
-  // Login verifies credentials and returns a JWT bound to a Redis-backed
-  // session id (jti).
+  // GetChallenge issues a random nonce that the client must sign with
+  // eth_signTypedData_v4 before calling Login.
+  rpc GetChallenge(GetChallengeRequest) returns (GetChallengeResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/people:getChallenge"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取登录挑战码"
+      tags: "people"
+    };
+  }
+
+  // Login verifies an EIP-712 signature and returns a JWT session.
+  // First-time wallets are auto-registered.
   rpc Login(LoginRequest) returns (LoginResponse) {
     option (google.api.http) = {
       post: "/api/v1/people:login"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "登录"
+      summary: "EIP-712 登录"
+      tags: "people"
+    };
+  }
+
+  // Logout revokes the caller's JWT session.
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/people:logout"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "登出"
+      tags: "people"
+    };
+  }
+
+  // CheckPermission reports whether a user holds a resource+action permission.
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/people:checkPermission"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "权限检查"
       tags: "people"
     };
   }

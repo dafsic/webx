@@ -21,23 +21,164 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Permission is a single resource+action capability.
+type Permission struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Resource      string                 `protobuf:"bytes,2,opt,name=resource,proto3" json:"resource,omitempty"`
+	Action        string                 `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`
+	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Permission) Reset() {
+	*x = Permission{}
+	mi := &file_people_v1_models_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Permission) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Permission) ProtoMessage() {}
+
+func (x *Permission) ProtoReflect() protoreflect.Message {
+	mi := &file_people_v1_models_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Permission.ProtoReflect.Descriptor instead.
+func (*Permission) Descriptor() ([]byte, []int) {
+	return file_people_v1_models_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *Permission) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Permission) GetResource() string {
+	if x != nil {
+		return x.Resource
+	}
+	return ""
+}
+
+func (x *Permission) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *Permission) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+// Role is a named collection of permissions assignable to users.
+type Role struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Permissions   []*Permission          `protobuf:"bytes,4,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Role) Reset() {
+	*x = Role{}
+	mi := &file_people_v1_models_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Role) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Role) ProtoMessage() {}
+
+func (x *Role) ProtoReflect() protoreflect.Message {
+	mi := &file_people_v1_models_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Role.ProtoReflect.Descriptor instead.
+func (*Role) Descriptor() ([]byte, []int) {
+	return file_people_v1_models_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Role) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Role) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Role) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *Role) GetPermissions() []*Permission {
+	if x != nil {
+		return x.Permissions
+	}
+	return nil
+}
+
 // User is the public projection of an account.
 type User struct {
-	state    protoimpl.MessageState `protogen:"open.v1"`
-	Id       int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Username string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
-	Nickname string                 `protobuf:"bytes,3,opt,name=nickname,proto3" json:"nickname,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Id        int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Address   string                 `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"` // lowercase EVM wallet address (0x…)
+	Nickname  string                 `protobuf:"bytes,3,opt,name=nickname,proto3" json:"nickname,omitempty"`
+	AvatarUrl string                 `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
+	Email     string                 `protobuf:"bytes,5,opt,name=email,proto3" json:"email,omitempty"`
+	Roles     []*Role                `protobuf:"bytes,6,rep,name=roles,proto3" json:"roles,omitempty"`
 	// Unix seconds.
-	CreatedAt int64 `protobuf:"varint,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	CreatedAt int64 `protobuf:"varint,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	// Unix seconds.
-	UpdatedAt     int64 `protobuf:"varint,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	UpdatedAt     int64 `protobuf:"varint,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *User) Reset() {
 	*x = User{}
-	mi := &file_people_v1_models_proto_msgTypes[0]
+	mi := &file_people_v1_models_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -49,7 +190,7 @@ func (x *User) String() string {
 func (*User) ProtoMessage() {}
 
 func (x *User) ProtoReflect() protoreflect.Message {
-	mi := &file_people_v1_models_proto_msgTypes[0]
+	mi := &file_people_v1_models_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +203,7 @@ func (x *User) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User.ProtoReflect.Descriptor instead.
 func (*User) Descriptor() ([]byte, []int) {
-	return file_people_v1_models_proto_rawDescGZIP(), []int{0}
+	return file_people_v1_models_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *User) GetId() int64 {
@@ -72,9 +213,9 @@ func (x *User) GetId() int64 {
 	return 0
 }
 
-func (x *User) GetUsername() string {
+func (x *User) GetAddress() string {
 	if x != nil {
-		return x.Username
+		return x.Address
 	}
 	return ""
 }
@@ -84,6 +225,27 @@ func (x *User) GetNickname() string {
 		return x.Nickname
 	}
 	return ""
+}
+
+func (x *User) GetAvatarUrl() string {
+	if x != nil {
+		return x.AvatarUrl
+	}
+	return ""
+}
+
+func (x *User) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *User) GetRoles() []*Role {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
 }
 
 func (x *User) GetCreatedAt() int64 {
@@ -100,17 +262,105 @@ func (x *User) GetUpdatedAt() int64 {
 	return 0
 }
 
+type GetChallengeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"` // EVM wallet address
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetChallengeRequest) Reset() {
+	*x = GetChallengeRequest{}
+	mi := &file_people_v1_models_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetChallengeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetChallengeRequest) ProtoMessage() {}
+
+func (x *GetChallengeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_people_v1_models_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetChallengeRequest.ProtoReflect.Descriptor instead.
+func (*GetChallengeRequest) Descriptor() ([]byte, []int) {
+	return file_people_v1_models_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GetChallengeRequest) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+type GetChallengeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Nonce         string                 `protobuf:"bytes,1,opt,name=nonce,proto3" json:"nonce,omitempty"` // random nonce to sign with eth_signTypedData_v4
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetChallengeResponse) Reset() {
+	*x = GetChallengeResponse{}
+	mi := &file_people_v1_models_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetChallengeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetChallengeResponse) ProtoMessage() {}
+
+func (x *GetChallengeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_people_v1_models_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetChallengeResponse.ProtoReflect.Descriptor instead.
+func (*GetChallengeResponse) Descriptor() ([]byte, []int) {
+	return file_people_v1_models_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetChallengeResponse) GetNonce() string {
+	if x != nil {
+		return x.Nonce
+	}
+	return ""
+}
+
 type LoginRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
-	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`     // EVM wallet address (must match the signed nonce)
+	Signature     string                 `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"` // EIP-712 signature over Login{nonce} (hex, 65 bytes)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LoginRequest) Reset() {
 	*x = LoginRequest{}
-	mi := &file_people_v1_models_proto_msgTypes[1]
+	mi := &file_people_v1_models_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -122,7 +372,7 @@ func (x *LoginRequest) String() string {
 func (*LoginRequest) ProtoMessage() {}
 
 func (x *LoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_people_v1_models_proto_msgTypes[1]
+	mi := &file_people_v1_models_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -135,19 +385,19 @@ func (x *LoginRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginRequest.ProtoReflect.Descriptor instead.
 func (*LoginRequest) Descriptor() ([]byte, []int) {
-	return file_people_v1_models_proto_rawDescGZIP(), []int{1}
+	return file_people_v1_models_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *LoginRequest) GetUsername() string {
+func (x *LoginRequest) GetAddress() string {
 	if x != nil {
-		return x.Username
+		return x.Address
 	}
 	return ""
 }
 
-func (x *LoginRequest) GetPassword() string {
+func (x *LoginRequest) GetSignature() string {
 	if x != nil {
-		return x.Password
+		return x.Signature
 	}
 	return ""
 }
@@ -158,13 +408,14 @@ type LoginResponse struct {
 	// Unix seconds.
 	ExpiresAt     int64 `protobuf:"varint,2,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	User          *User `protobuf:"bytes,3,opt,name=user,proto3" json:"user,omitempty"`
+	IsNew         bool  `protobuf:"varint,4,opt,name=is_new,json=isNew,proto3" json:"is_new,omitempty"` // true when the account was created by this login
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LoginResponse) Reset() {
 	*x = LoginResponse{}
-	mi := &file_people_v1_models_proto_msgTypes[2]
+	mi := &file_people_v1_models_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -176,7 +427,7 @@ func (x *LoginResponse) String() string {
 func (*LoginResponse) ProtoMessage() {}
 
 func (x *LoginResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_people_v1_models_proto_msgTypes[2]
+	mi := &file_people_v1_models_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -189,7 +440,7 @@ func (x *LoginResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginResponse.ProtoReflect.Descriptor instead.
 func (*LoginResponse) Descriptor() ([]byte, []int) {
-	return file_people_v1_models_proto_rawDescGZIP(), []int{2}
+	return file_people_v1_models_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *LoginResponse) GetToken() string {
@@ -213,27 +464,238 @@ func (x *LoginResponse) GetUser() *User {
 	return nil
 }
 
+func (x *LoginResponse) GetIsNew() bool {
+	if x != nil {
+		return x.IsNew
+	}
+	return false
+}
+
+type LogoutRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogoutRequest) Reset() {
+	*x = LogoutRequest{}
+	mi := &file_people_v1_models_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogoutRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogoutRequest) ProtoMessage() {}
+
+func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_people_v1_models_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogoutRequest.ProtoReflect.Descriptor instead.
+func (*LogoutRequest) Descriptor() ([]byte, []int) {
+	return file_people_v1_models_proto_rawDescGZIP(), []int{7}
+}
+
+type LogoutResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogoutResponse) Reset() {
+	*x = LogoutResponse{}
+	mi := &file_people_v1_models_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogoutResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogoutResponse) ProtoMessage() {}
+
+func (x *LogoutResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_people_v1_models_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogoutResponse.ProtoReflect.Descriptor instead.
+func (*LogoutResponse) Descriptor() ([]byte, []int) {
+	return file_people_v1_models_proto_rawDescGZIP(), []int{8}
+}
+
+type CheckPermissionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Resource      string                 `protobuf:"bytes,2,opt,name=resource,proto3" json:"resource,omitempty"`
+	Action        string                 `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckPermissionRequest) Reset() {
+	*x = CheckPermissionRequest{}
+	mi := &file_people_v1_models_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckPermissionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckPermissionRequest) ProtoMessage() {}
+
+func (x *CheckPermissionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_people_v1_models_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckPermissionRequest.ProtoReflect.Descriptor instead.
+func (*CheckPermissionRequest) Descriptor() ([]byte, []int) {
+	return file_people_v1_models_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *CheckPermissionRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *CheckPermissionRequest) GetResource() string {
+	if x != nil {
+		return x.Resource
+	}
+	return ""
+}
+
+func (x *CheckPermissionRequest) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+type CheckPermissionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Allowed       bool                   `protobuf:"varint,1,opt,name=allowed,proto3" json:"allowed,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckPermissionResponse) Reset() {
+	*x = CheckPermissionResponse{}
+	mi := &file_people_v1_models_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckPermissionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckPermissionResponse) ProtoMessage() {}
+
+func (x *CheckPermissionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_people_v1_models_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckPermissionResponse.ProtoReflect.Descriptor instead.
+func (*CheckPermissionResponse) Descriptor() ([]byte, []int) {
+	return file_people_v1_models_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *CheckPermissionResponse) GetAllowed() bool {
+	if x != nil {
+		return x.Allowed
+	}
+	return false
+}
+
 var File_people_v1_models_proto protoreflect.FileDescriptor
 
 const file_people_v1_models_proto_rawDesc = "" +
 	"\n" +
-	"\x16people/v1/models.proto\x12\tpeople.v1\"\x8c\x01\n" +
-	"\x04User\x12\x0e\n" +
+	"\x16people/v1/models.proto\x12\tpeople.v1\"r\n" +
+	"\n" +
+	"Permission\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1a\n" +
-	"\busername\x18\x02 \x01(\tR\busername\x12\x1a\n" +
+	"\bresource\x18\x02 \x01(\tR\bresource\x12\x16\n" +
+	"\x06action\x18\x03 \x01(\tR\x06action\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\"\x85\x01\n" +
+	"\x04Role\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x127\n" +
+	"\vpermissions\x18\x04 \x03(\v2\x15.people.v1.PermissionR\vpermissions\"\xe6\x01\n" +
+	"\x04User\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x18\n" +
+	"\aaddress\x18\x02 \x01(\tR\aaddress\x12\x1a\n" +
 	"\bnickname\x18\x03 \x01(\tR\bnickname\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x04 \x01(\x03R\tcreatedAt\x12\x1d\n" +
+	"avatar_url\x18\x04 \x01(\tR\tavatarUrl\x12\x14\n" +
+	"\x05email\x18\x05 \x01(\tR\x05email\x12%\n" +
+	"\x05roles\x18\x06 \x03(\v2\x0f.people.v1.RoleR\x05roles\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\x05 \x01(\x03R\tupdatedAt\"F\n" +
-	"\fLoginRequest\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"i\n" +
+	"created_at\x18\a \x01(\x03R\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\b \x01(\x03R\tupdatedAt\"/\n" +
+	"\x13GetChallengeRequest\x12\x18\n" +
+	"\aaddress\x18\x01 \x01(\tR\aaddress\",\n" +
+	"\x14GetChallengeResponse\x12\x14\n" +
+	"\x05nonce\x18\x01 \x01(\tR\x05nonce\"F\n" +
+	"\fLoginRequest\x12\x18\n" +
+	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x1c\n" +
+	"\tsignature\x18\x02 \x01(\tR\tsignature\"\x80\x01\n" +
 	"\rLoginResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1d\n" +
 	"\n" +
 	"expires_at\x18\x02 \x01(\x03R\texpiresAt\x12#\n" +
-	"\x04user\x18\x03 \x01(\v2\x0f.people.v1.UserR\x04userB4Z2github.com/dafsic/webx/proto_go/people/v1;peoplev1b\x06proto3"
+	"\x04user\x18\x03 \x01(\v2\x0f.people.v1.UserR\x04user\x12\x15\n" +
+	"\x06is_new\x18\x04 \x01(\bR\x05isNew\"\x0f\n" +
+	"\rLogoutRequest\"\x10\n" +
+	"\x0eLogoutResponse\"e\n" +
+	"\x16CheckPermissionRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1a\n" +
+	"\bresource\x18\x02 \x01(\tR\bresource\x12\x16\n" +
+	"\x06action\x18\x03 \x01(\tR\x06action\"3\n" +
+	"\x17CheckPermissionResponse\x12\x18\n" +
+	"\aallowed\x18\x01 \x01(\bR\aallowedB4Z2github.com/dafsic/webx/proto_go/people/v1;peoplev1b\x06proto3"
 
 var (
 	file_people_v1_models_proto_rawDescOnce sync.Once
@@ -247,19 +709,29 @@ func file_people_v1_models_proto_rawDescGZIP() []byte {
 	return file_people_v1_models_proto_rawDescData
 }
 
-var file_people_v1_models_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_people_v1_models_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_people_v1_models_proto_goTypes = []any{
-	(*User)(nil),          // 0: people.v1.User
-	(*LoginRequest)(nil),  // 1: people.v1.LoginRequest
-	(*LoginResponse)(nil), // 2: people.v1.LoginResponse
+	(*Permission)(nil),              // 0: people.v1.Permission
+	(*Role)(nil),                    // 1: people.v1.Role
+	(*User)(nil),                    // 2: people.v1.User
+	(*GetChallengeRequest)(nil),     // 3: people.v1.GetChallengeRequest
+	(*GetChallengeResponse)(nil),    // 4: people.v1.GetChallengeResponse
+	(*LoginRequest)(nil),            // 5: people.v1.LoginRequest
+	(*LoginResponse)(nil),           // 6: people.v1.LoginResponse
+	(*LogoutRequest)(nil),           // 7: people.v1.LogoutRequest
+	(*LogoutResponse)(nil),          // 8: people.v1.LogoutResponse
+	(*CheckPermissionRequest)(nil),  // 9: people.v1.CheckPermissionRequest
+	(*CheckPermissionResponse)(nil), // 10: people.v1.CheckPermissionResponse
 }
 var file_people_v1_models_proto_depIdxs = []int32{
-	0, // 0: people.v1.LoginResponse.user:type_name -> people.v1.User
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // 0: people.v1.Role.permissions:type_name -> people.v1.Permission
+	1, // 1: people.v1.User.roles:type_name -> people.v1.Role
+	2, // 2: people.v1.LoginResponse.user:type_name -> people.v1.User
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_people_v1_models_proto_init() }
@@ -273,7 +745,7 @@ func file_people_v1_models_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_people_v1_models_proto_rawDesc), len(file_people_v1_models_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

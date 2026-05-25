@@ -1,0 +1,179 @@
+# 阿拉伯语
+
+[Unauthorized]
+other = "غير مصرح به"
+
+[LangNotFound]
+other = "مطلوب رأس اللغة"
+
+[Forbidden]
+other = "الوصول ممنوع"
+
+[UserNotFound]
+other = "المستخدم غير موجود"
+
+[TokenInvalid]
+other = "الرمز غير صالح"
+
+[ParamsInvalid]
+other = "معلمات الطلب غير صالحة"
+
+[SignatureInvalid]
+other = "التوقيع غير صحيح"
+
+[PermissionDenied]
+other = "تم رفض الصلاحيات"
+
+[OverTheLimit]
+other = "تجاوز الحد المسموح"
+
+[InsufficientBalance]
+other = "الرصيد غير كافٍ"
+
+[OrderCannotUnstake]
+other = "لا يمكن إلغاء رهن الطلب"
+
+[OrderAlreadyExists]
+other = "الطلب موجود بالفعل"
+
+[DeviceAlreadyBound]
+other = "الجهاز مربوط بالفعل بحساب آخر"
+
+[ExceedsDailyMiningLimit]
+other = "تجاوز الحد اليومي للتعدين"
+
+[InvalidInviter]
+other = "المدعو غير صالح"
+
+[NFTAlreadyUsed]
+other = "تم استخدام NFT بالفعل"
+
+[ExceedsDailyLimit]
+other = "تجاوز الحد اليومي"
+
+[CannotTransferTo]
+other = "لا يمكن التحويل إلى هذا العنوان"
+
+[InternalServerError]
+other = "خطأ داخلي في الخادم"
+
+[ParameterError]
+other = "خطأ في المعلمة"
+
+[NumberCannotBeInfinity]
+other = "لا يمكن أن يكون العدد لانهائيًا"
+
+[ThePledgedAmountCannotBeLessThanZero]
+other = "مبلغ الرهن لا يمكن أن يكون أقل من صفر"
+
+[IllegalOperation]
+other = "عملية غير قانونية"
+
+[LockPeriodHasNotExpiredYet]
+other = "لم تنتهِ فترة القفل بعد، لا يمكن رفع الرهن"
+
+[GasPledgeHasNotBeenDevelopedYet]
+other = "رهن الرسوم (Gas) لم يتم تطويره بعد، يرجى الانتظار"
+
+[CurrencyInformationDoesNotExist]
+other = "معلومات العملة غير موجودة"
+
+[RechargeAmountIncorrect]
+other = "مبلغ الشحن غير صحيح"
+
+[MinimumRechargeAmount]
+other = "أدنى مبلغ شحن"
+
+[WithdrawalAmountIsLessThanTheMinimumWithdrawalAmount]
+other = "مبلغ السحب أقل من الحد الأدنى للسحب"
+
+[TheWithdrawalAmountIsGreaterThanTheMaximumWithdrawalAmount]
+other = "مبلغ السحب أكبر من الحد الأقصى للسحب"
+
+[TheWithdrawalFunctionHasNotBeenDevelopedYet]
+other = "وظيفة السحب لم يتم تطويرها بعد"
+
+[TheQuantityCannotBeLessThanZero]
+other = "الكمية لا يمكن أن تكون أقل من صفر"
+
+[AmountIncorrect]
+other = "المبلغ غير صحيح"
+
+[TransferAmountIsLessThanTheMinimumTransferAmount]
+other = "مبلغ التحويل أقل من الحد الأدنى للتحويل"
+
+[TheTransferAmountIsGreaterThanTheMaximumTransferAmount]
+other = "مبلغ التحويل أكبر من الحد الأقصى للتحويل"
+
+[StakingBaseAddFail]
+other = "فشل إضافة تكوين الرهن"
+
+[StakingBaseEditFail]
+other = "فشل تعديل تكوين الرهن"
+
+[OrderCreationFailed]
+other = "فشل إنشاء الطلب"
+
+[StakingOrderAddFail]
+other = "فشل الرهن"
+
+[TheCurrencyAlreadyExists]
+other = "العملة موجودة بالفعل"
+
+[SubscriptionNotYetStarted]
+other = "لم تبدأ الاشتراكات بعد"
+
+[SubscriptionHasEnded]
+other = "انتهت فترة الاشتراك"
+
+[AddNodeFail]
+other = "فشل إضافة طلب العقدة"
+
+[EachPersonCanOnlySubscribeToOne]
+other = "يمكن لكل شخص الاشتراك في واحد فقط"
+
+[SoldOut]
+other = "تم البيع بالكامل"
+
+[InvalidUser]
+other = "مستخدم غير صالح"
+
+[TheLevelDoesNotMeetTheSubscriptionCriteria]
+other = "المستوى لا يستوفي شروط الاشتراك"
+
+[YouHaveNotSubscribedToNFTYetPleaseSubscribeToNFTFirstAndThenPledgeIt]
+other = "لم تشترك بعد في NFT، يرجى الاشتراك أولاً ثم رهنها"
+
+[InvalidPassword]
+other = "كلمة المرور غير صالحة"
+
+[AddAirdropFail]
+other = "فشل إضافة التوزيع المجاني"
+
+[AlreadySignedPleaseDoNotRepeatTheOperation]
+other = "لقد تم التوقيع بالفعل، يرجى عدم تكرار العملية"
+
+[DoNotRepeatTheOperation]
+other = "لا تكرر العملية"
+
+[TheTotalRecruitmentAmountMustBeGreaterThan0]
+other = "يجب أن يكون إجمالي الكمية المطلوبة أكبر من 0"
+
+[TheRecruitmentCoinPriceMustBeGreaterThan0]
+other = "سعر العملة المطلوبة يجب أن يكون أكبر من 0"
+
+[TheRecruitmentPricePerUnitMustBeGreaterThan0]
+other = "سعر الاشتراك لكل وحدة (بالدولار الأمريكي) يجب أن يكون أكبر من 0"
+
+[TheWaitingTimeMustBeGreaterThanTheCurrentTime]
+other = "يجب أن يكون وقت الانتظار أكبر من الوقت الحالي"
+
+[TheEndTimeMustBeGreaterThanTheWaitingTime]
+other = "يجب أن يكون وقت الانتهاء أكبر من وقت الانتظار"
+
+[HoldingQuantityExceedsTheLimit]
+other = "تجاوز الحد المسموح لامتلاك أجهزة التعدين"
+
+[TheModificationProgressCannotBeLessThanThePreviousProgress]
+other = "تعديل الجدول الزمني لا يمكن أن يكون أقل من السابق"
+

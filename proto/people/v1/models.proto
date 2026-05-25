@@ -4,25 +4,73 @@ package people.v1;
 
 option go_package = "github.com/dafsic/webx/proto_go/people/v1;peoplev1";
 
-// User is the public projection of an account.
-message User {
-  int64 id = 1;
-  string username = 2;
-  string nickname = 3;
-  // Unix seconds.
-  int64 created_at = 4;
-  // Unix seconds.
-  int64 updated_at = 5;
+// Permission is a single resource+action capability.
+message Permission {
+  int64  id          = 1;
+  string resource    = 2;
+  string action      = 3;
+  string description = 4;
 }
 
+// Role is a named collection of permissions assignable to users.
+message Role {
+  int64               id          = 1;
+  string              name        = 2;
+  string              description = 3;
+  repeated Permission permissions = 4;
+}
+
+// User is the public projection of an account.
+message User {
+  int64         id         = 1;
+  string        address    = 2;  // lowercase EVM wallet address (0x…)
+  string        nickname   = 3;
+  string        avatar_url = 4;
+  string        email      = 5;
+  repeated Role roles      = 6;
+  int64         created_at = 7; // Unix seconds.
+  int64         updated_at = 8; // Unix seconds.
+}
+
+// ── GetChallenge ──────────────────────────────────────────────────────────
+
+message GetChallengeRequest {
+  string address = 1;  // EVM wallet address
+}
+
+message GetChallengeResponse {
+  string nonce = 1;  // random nonce to sign with eth_signTypedData_v4
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────
+
 message LoginRequest {
-  string username = 1;
-  string password = 2;
+  string address   = 1;  // EVM wallet address (must match the signed nonce)
+  string signature = 2;  // EIP-712 signature over Login{nonce} (hex, 65 bytes)
 }
 
 message LoginResponse {
   string token = 1;
   // Unix seconds.
   int64 expires_at = 2;
-  User user = 3;
+  User  user       = 3;
+  bool  is_new     = 4;  // true when the account was created by this login
+}
+
+// ── Logout ────────────────────────────────────────────────────────────────
+
+message LogoutRequest {}
+
+message LogoutResponse {}
+
+// ── CheckPermission ───────────────────────────────────────────────────────
+
+message CheckPermissionRequest {
+  int64  user_id  = 1;
+  string resource = 2;
+  string action   = 3;
+}
+
+message CheckPermissionResponse {
+  bool allowed = 1;
 }

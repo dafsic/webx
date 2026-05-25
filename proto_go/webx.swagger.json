@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Webx People API",
-    "description": "用户与认证相关的 gRPC + REST 接口。",
+    "description": "EVM 钱包用户认证与 RBAC 权限 gRPC + REST 接口。",
     "version": "v1"
   },
   "tags": [
@@ -17,9 +17,75 @@
     "application/json"
   ],
   "paths": {
+    "/api/v1/people:checkPermission": {
+      "post": {
+        "summary": "权限检查",
+        "operationId": "PeopleService_CheckPermission",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CheckPermissionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CheckPermissionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/api/v1/people:getChallenge": {
+      "post": {
+        "summary": "获取登录挑战码",
+        "operationId": "PeopleService_GetChallenge",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetChallengeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1GetChallengeRequest"
+            }
+          }
+        ],
+        "tags": [
+          "people"
+        ]
+      }
+    },
     "/api/v1/people:login": {
       "post": {
-        "summary": "登录",
+        "summary": "EIP-712 登录",
         "operationId": "PeopleService_Login",
         "responses": {
           "200": {
@@ -42,6 +108,39 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/v1LoginRequest"
+            }
+          }
+        ],
+        "tags": [
+          "people"
+        ]
+      }
+    },
+    "/api/v1/people:logout": {
+      "post": {
+        "summary": "登出",
+        "operationId": "PeopleService_Logout",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1LogoutResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1LogoutRequest"
             }
           }
         ],
@@ -80,14 +179,57 @@
         }
       }
     },
+    "v1CheckPermissionRequest": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        }
+      }
+    },
+    "v1CheckPermissionResponse": {
+      "type": "object",
+      "properties": {
+        "allowed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1GetChallengeRequest": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "title": "EVM wallet address"
+        }
+      }
+    },
+    "v1GetChallengeResponse": {
+      "type": "object",
+      "properties": {
+        "nonce": {
+          "type": "string",
+          "title": "random nonce to sign with eth_signTypedData_v4"
+        }
+      }
+    },
     "v1LoginRequest": {
       "type": "object",
       "properties": {
-        "username": {
-          "type": "string"
+        "address": {
+          "type": "string",
+          "title": "EVM wallet address (must match the signed nonce)"
         },
-        "password": {
-          "type": "string"
+        "signature": {
+          "type": "string",
+          "title": "EIP-712 signature over Login{nonce} (hex, 65 bytes)"
         }
       }
     },
@@ -104,8 +246,60 @@
         },
         "user": {
           "$ref": "#/definitions/v1User"
+        },
+        "is_new": {
+          "type": "boolean",
+          "title": "true when the account was created by this login"
         }
       }
+    },
+    "v1LogoutRequest": {
+      "type": "object"
+    },
+    "v1LogoutResponse": {
+      "type": "object"
+    },
+    "v1Permission": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "description": "Permission is a single resource+action capability."
+    },
+    "v1Role": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Permission"
+          }
+        }
+      },
+      "description": "Role is a named collection of permissions assignable to users."
     },
     "v1User": {
       "type": "object",
@@ -114,11 +308,25 @@
           "type": "string",
           "format": "int64"
         },
-        "username": {
-          "type": "string"
+        "address": {
+          "type": "string",
+          "title": "lowercase EVM wallet address (0x…)"
         },
         "nickname": {
           "type": "string"
+        },
+        "avatar_url": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Role"
+          }
         },
         "created_at": {
           "type": "string",
