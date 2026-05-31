@@ -1,15 +1,16 @@
-// Package postgres provides a sqlx + sql-migrate + squirrel based PostgreSQL
-// module for the webx framework.
+// Package postgres provides a native pgx v5 + sql-migrate + squirrel based
+// PostgreSQL module for the webx framework.
 //
-// Driver: github.com/jackc/pgx/v5/stdlib (registered as "pgx").
+// Driver: github.com/jackc/pgx/v5/pgxpool (native pgx — no database/sql).
+// Migrations only: pgx/stdlib *sql.DB is opened temporarily for sql-migrate.
 //
 // CLI flags registered (all with matching POSTGRES_* environment variables):
 //
 //	--postgres-dsn                  DSN (default: localhost dev DSN)
-//	--postgres-max-open-conns       max open connections (default 25)
-//	--postgres-max-idle-conns       max idle connections (default 5)
-//	--postgres-conn-max-lifetime    conn max lifetime   (default 30m)
-//	--postgres-conn-max-idle-time   conn max idle time  (default 5m)
+//	--postgres-max-conns            max pool connections (default 25)
+//	--postgres-min-conns            min idle connections (default 5)
+//	--postgres-max-conn-lifetime    max connection lifetime (default 30m)
+//	--postgres-max-conn-idle-time   max connection idle time (default 5m)
 //	--postgres-ping-timeout         startup ping timeout (default 5s; 0 disables)
 //	--postgres-migrate              run "up" migrations on startup (default false)
 //	--postgres-migrate-dir          directory with migration files (default ./migrations)
@@ -18,10 +19,10 @@
 //
 // Provided into the fx graph:
 //
-//	postgres.Database  — high-level wrapper (Ping/Session/Transact/Close)
-//	*sqlx.DB           — underlying handle, for code that needs it directly
-//	*postgres.Migrator — sql-migrate driver bound to this database
-//	*postgres.Config   — resolved configuration
+//	postgres.Database    — high-level wrapper (Ping/Pool/Transact/Close)
+//	*pgxpool.Pool        — underlying pool, for code that needs it directly
+//	*postgres.Migrator   — sql-migrate driver bound to this database config
+//	*postgres.Config     — resolved configuration
 //
 // Lifecycle:
 //
@@ -38,8 +39,7 @@ import (
 	"log/slog"
 
 	"github.com/dafsic/webx/app"
-	_ "github.com/jackc/pgx/v5/stdlib" // register "pgx" driver
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/fx"
 )
@@ -57,63 +57,63 @@ func (m *Module) Name() string { return ModuleName }
 func (m *Module) Configure(a *cli.App) {
 	a.Flags = append(a.Flags,
 		&cli.StringFlag{
-			Name:    FlagDSN,
+			Name:    "postgres-dsn",
 			Value:   DefaultDSN,
-			EnvVars: []string{EnvDSN},
+			EnvVars: []string{"POSTGRES_DSN"},
 			Usage:   "PostgreSQL DSN",
 		},
 		&cli.IntFlag{
-			Name:    FlagMaxOpenConns,
-			Value:   DefaultMaxOpenConns,
-			EnvVars: []string{EnvMaxOpenConns},
-			Usage:   "Maximum number of open connections",
+			Name:    "postgres-max-conns",
+			Value:   int(DefaultMaxConns),
+			EnvVars: []string{"POSTGRES_MAX_CONNS"},
+			Usage:   "Maximum number of connections in the pool",
 		},
 		&cli.IntFlag{
-			Name:    FlagMaxIdleConns,
-			Value:   DefaultMaxIdleConns,
-			EnvVars: []string{EnvMaxIdleConns},
-			Usage:   "Maximum number of idle connections",
+			Name:    "postgres-min-conns",
+			Value:   int(DefaultMinConns),
+			EnvVars: []string{"POSTGRES_MIN_CONNS"},
+			Usage:   "Minimum number of idle connections",
 		},
 		&cli.DurationFlag{
-			Name:    FlagConnMaxLifetime,
+			Name:    "postgres-max-conn-lifetime",
 			Value:   DefaultConnMaxLifetime,
-			EnvVars: []string{EnvConnMaxLifetime},
+			EnvVars: []string{"POSTGRES_MAX_CONN_LIFETIME"},
 			Usage:   "Maximum lifetime of a connection",
 		},
 		&cli.DurationFlag{
-			Name:    FlagConnMaxIdleTime,
+			Name:    "postgres-max-conn-idle-time",
 			Value:   DefaultConnMaxIdleTime,
-			EnvVars: []string{EnvConnMaxIdleTime},
-			Usage:   "Maximum idle time of a connection",
+			EnvVars: []string{"POSTGRES_MAX_CONN_IDLE_TIME"},
+			Usage:   "Maximum idle time before a connection is evicted",
 		},
 		&cli.DurationFlag{
-			Name:    FlagPingTimeout,
+			Name:    "postgres-ping-timeout",
 			Value:   DefaultPingTimeout,
-			EnvVars: []string{EnvPingTimeout},
+			EnvVars: []string{"POSTGRES_PING_TIMEOUT"},
 			Usage:   "Startup ping timeout (0 disables)",
 		},
 		&cli.StringFlag{
-			Name:    FlagMigrate,
+			Name:    "postgres-migrate",
 			Value:   DefaultMigrate,
-			EnvVars: []string{EnvMigrate},
+			EnvVars: []string{"POSTGRES_MIGRATE"},
 			Usage:   "Run migrations on startup: off | up | down",
 		},
 		&cli.StringFlag{
-			Name:    FlagMigrateDir,
+			Name:    "postgres-migrate-dir",
 			Value:   DefaultMigrateDir,
-			EnvVars: []string{EnvMigrateDir},
+			EnvVars: []string{"POSTGRES_MIGRATE_DIR"},
 			Usage:   "Directory containing sql-migrate files",
 		},
 		&cli.StringFlag{
-			Name:    FlagMigrateTable,
+			Name:    "postgres-migrate-table",
 			Value:   DefaultMigrateTable,
-			EnvVars: []string{EnvMigrateTable},
+			EnvVars: []string{"POSTGRES_MIGRATE_TABLE"},
 			Usage:   "Migration tracking table",
 		},
 		&cli.StringFlag{
-			Name:    FlagMigrateSchema,
+			Name:    "postgres-migrate-schema",
 			Value:   DefaultMigrateSchema,
-			EnvVars: []string{EnvMigrateSchema},
+			EnvVars: []string{"POSTGRES_MIGRATE_SCHEMA"},
 			Usage:   "Migration tracking schema",
 		},
 	)
@@ -122,31 +122,31 @@ func (m *Module) Configure(a *cli.App) {
 // Install implements app.Module.
 func (m *Module) Install(ctx app.Context) fx.Option {
 	cliOpts := []Option{
-		WithDSN(ctx.String(FlagDSN)),
-		WithMaxOpenConns(ctx.Int(FlagMaxOpenConns)),
-		WithMaxIdleConns(ctx.Int(FlagMaxIdleConns)),
-		WithConnMaxLifetime(ctx.Duration(FlagConnMaxLifetime)),
-		WithConnMaxIdleTime(ctx.Duration(FlagConnMaxIdleTime)),
-		WithPingTimeout(ctx.Duration(FlagPingTimeout)),
-		WithMigrate(ctx.String(FlagMigrate)),
-		WithMigrateDir(ctx.String(FlagMigrateDir)),
-		WithMigrateTable(ctx.String(FlagMigrateTable)),
-		WithMigrateSchema(ctx.String(FlagMigrateSchema)),
+		WithDSN(ctx.String("postgres-dsn")),
+		WithMaxConns(int32(ctx.Int("postgres-max-conns"))),
+		WithMinConns(int32(ctx.Int("postgres-min-conns"))),
+		WithMaxConnLifetime(ctx.Duration("postgres-max-conn-lifetime")),
+		WithMaxConnIdleTime(ctx.Duration("postgres-max-conn-idle-time")),
+		WithPingTimeout(ctx.Duration("postgres-ping-timeout")),
+		WithMigrate(ctx.String("postgres-migrate")),
+		WithMigrateDir(ctx.String("postgres-migrate-dir")),
+		WithMigrateTable(ctx.String("postgres-migrate-table")),
+		WithMigrateSchema(ctx.String("postgres-migrate-schema")),
 	}
 
 	return fx.Options(
 		fx.Supply(fx.Annotate(
 			cliOpts,
-			fx.ResultTags(`group:"`+OptionsGroup+`,flatten"`),
+			fx.ResultTags(`group:"postgres_options,flatten"`),
 		)),
 		fx.Provide(fx.Annotate(
 			NewConfig,
-			fx.ParamTags(`group:"`+OptionsGroup+`"`),
+			fx.ParamTags(`group:"postgres_options"`),
 		)),
 		fx.Provide(
 			NewDatabase,
 			NewMigrator,
-			func(db Database) *sqlx.DB { return db.Session() },
+			func(db Database) *pgxpool.Pool { return db.Pool() },
 		),
 		fx.Invoke(registerLifecycle),
 	)

@@ -49,26 +49,26 @@ func (m *Module) Name() string { return ModuleName }
 // Configure implements app.Module.
 func (m *Module) Configure(a *cli.App) {
 	a.Flags = append(a.Flags,
-		&cli.StringFlag{Name: FlagEndpoint, Value: DefaultEndpoint, EnvVars: []string{EnvEndpoint}, Usage: "OTLP gRPC endpoint (host:port)"},
-		&cli.StringFlag{Name: FlagServiceName, EnvVars: []string{EnvServiceName}, Usage: "service.name resource attribute (defaults to app name)"},
-		&cli.Float64Flag{Name: FlagSampleRatio, Value: DefaultSampleRatio, EnvVars: []string{EnvSampleRatio}, Usage: "Trace sample ratio in [0,1]"},
-		&cli.BoolFlag{Name: FlagInsecure, Value: true, EnvVars: []string{EnvInsecure}, Usage: "Use plaintext gRPC for OTLP"},
-		&cli.BoolFlag{Name: FlagDisabled, EnvVars: []string{EnvDisabled}, Usage: "Disable the OTel SDK entirely (no-op tracer)"},
+		&cli.StringFlag{Name: "otel-endpoint", Value: DefaultEndpoint, EnvVars: []string{"OTEL_ENDPOINT"}, Usage: "OTLP gRPC endpoint (host:port)"},
+		&cli.StringFlag{Name: "otel-service-name", EnvVars: []string{"OTEL_SERVICE_NAME"}, Usage: "service.name resource attribute (defaults to app name)"},
+		&cli.Float64Flag{Name: "otel-sample-ratio", Value: DefaultSampleRatio, EnvVars: []string{"OTEL_SAMPLE_RATIO"}, Usage: "Trace sample ratio in [0,1]"},
+		&cli.BoolFlag{Name: "otel-insecure", Value: true, EnvVars: []string{"OTEL_INSECURE"}, Usage: "Use plaintext gRPC for OTLP"},
+		&cli.BoolFlag{Name: "otel-disabled", EnvVars: []string{"OTEL_SDK_DISABLED"}, Usage: "Disable the OTel SDK entirely (no-op tracer)"},
 	)
 }
 
 // Install implements app.Module.
 func (m *Module) Install(ctx app.Context) fx.Option {
-	svcName := ctx.String(FlagServiceName)
+	svcName := ctx.String("otel-service-name")
 	if svcName == "" {
 		svcName = os.Getenv("APP_NAME")
 	}
 
 	base := []Option{
-		WithEndpoint(ctx.String(FlagEndpoint)),
-		WithSampleRatio(ctx.Float64(FlagSampleRatio)),
-		WithInsecure(ctx.Bool(FlagInsecure)),
-		WithDisabled(ctx.Bool(FlagDisabled)),
+		WithEndpoint(ctx.String("otel-endpoint")),
+		WithSampleRatio(ctx.Float64("otel-sample-ratio")),
+		WithInsecure(ctx.Bool("otel-insecure")),
+		WithDisabled(ctx.Bool("otel-disabled")),
 	}
 	if svcName != "" {
 		base = append(base, WithServiceName(svcName))
@@ -97,7 +97,7 @@ func (m *Module) Install(ctx app.Context) fx.Option {
 			},
 			fx.Annotate(
 				func(extras []Option) []Option { return extras },
-				fx.ParamTags(`group:"`+OptionsGroup+`"`),
+				fx.ParamTags(`group:"otel_options"`),
 			),
 			newTracerProvider,
 		),

@@ -42,7 +42,7 @@ func (m *Module) Install(_ app.Context) fx.Option {
 		fx.Provide(
 			fx.Annotate(
 				func(extras []Option) []Option { return extras },
-				fx.ParamTags(`group:"`+OptionsGroup+`"`),
+				fx.ParamTags(`group:"grpcclient_options"`),
 			),
 			func(extras []Option) (*Config, error) {
 				cfg := defaultConfig()

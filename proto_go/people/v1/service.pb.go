@@ -26,21 +26,39 @@ var File_people_v1_service_proto protoreflect.FileDescriptor
 
 const file_people_v1_service_proto_rawDesc = "" +
 	"\n" +
-	"\x17people/v1/service.proto\x12\tpeople.v1\x1a\x1cgoogle/api/annotations.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\x1a\x16people/v1/models.proto2\x7f\n" +
-	"\rPeopleService\x12n\n" +
-	"\x05Login\x12\x17.people.v1.LoginRequest\x1a\x18.people.v1.LoginResponse\"2\x92A\x10\n" +
-	"\x06people\x12\x06登录\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/api/v1/people:loginB~\x92AG\x12E\n" +
-	"\x0fWebx People API\x12.用户与认证相关的 gRPC + REST 接口。2\x02v1Z2github.com/dafsic/webx/proto_go/people/v1;peoplev1b\x06proto3"
+	"\x17people/v1/service.proto\x12\tpeople.v1\x1a\x1cgoogle/api/annotations.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\x1a\x16people/v1/models.proto2\xb6\x04\n" +
+	"\rPeopleService\x12\x99\x01\n" +
+	"\fGetChallenge\x12\x1e.people.v1.GetChallengeRequest\x1a\x1f.people.v1.GetChallengeResponse\"H\x92A\x1f\n" +
+	"\x06people\x12\x15获取登录挑战码\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/api/v1/people:getChallenge\x12v\n" +
+	"\x05Login\x12\x17.people.v1.LoginRequest\x1a\x18.people.v1.LoginResponse\":\x92A\x18\n" +
+	"\x06people\x12\x0eEIP-712 登录\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/api/v1/people:login\x12r\n" +
+	"\x06Logout\x12\x18.people.v1.LogoutRequest\x1a\x19.people.v1.LogoutResponse\"3\x92A\x10\n" +
+	"\x06people\x12\x06登出\x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/v1/people:logout\x12\x9c\x01\n" +
+	"\x0fCheckPermission\x12!.people.v1.CheckPermissionRequest\x1a\".people.v1.CheckPermissionResponse\"B\x92A\x16\n" +
+	"\x06people\x12\f权限检查\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/api/v1/people:checkPermissionB\x8b\x01\x92AT\x12R\n" +
+	"\x0fWebx People API\x12;EVM 钱包用户认证与 RBAC 权限 gRPC + REST 接口。2\x02v1Z2github.com/dafsic/webx/proto_go/people/v1;peoplev1b\x06proto3"
 
 var file_people_v1_service_proto_goTypes = []any{
-	(*LoginRequest)(nil),  // 0: people.v1.LoginRequest
-	(*LoginResponse)(nil), // 1: people.v1.LoginResponse
+	(*GetChallengeRequest)(nil),     // 0: people.v1.GetChallengeRequest
+	(*LoginRequest)(nil),            // 1: people.v1.LoginRequest
+	(*LogoutRequest)(nil),           // 2: people.v1.LogoutRequest
+	(*CheckPermissionRequest)(nil),  // 3: people.v1.CheckPermissionRequest
+	(*GetChallengeResponse)(nil),    // 4: people.v1.GetChallengeResponse
+	(*LoginResponse)(nil),           // 5: people.v1.LoginResponse
+	(*LogoutResponse)(nil),          // 6: people.v1.LogoutResponse
+	(*CheckPermissionResponse)(nil), // 7: people.v1.CheckPermissionResponse
 }
 var file_people_v1_service_proto_depIdxs = []int32{
-	0, // 0: people.v1.PeopleService.Login:input_type -> people.v1.LoginRequest
-	1, // 1: people.v1.PeopleService.Login:output_type -> people.v1.LoginResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	0, // 0: people.v1.PeopleService.GetChallenge:input_type -> people.v1.GetChallengeRequest
+	1, // 1: people.v1.PeopleService.Login:input_type -> people.v1.LoginRequest
+	2, // 2: people.v1.PeopleService.Logout:input_type -> people.v1.LogoutRequest
+	3, // 3: people.v1.PeopleService.CheckPermission:input_type -> people.v1.CheckPermissionRequest
+	4, // 4: people.v1.PeopleService.GetChallenge:output_type -> people.v1.GetChallengeResponse
+	5, // 5: people.v1.PeopleService.Login:output_type -> people.v1.LoginResponse
+	6, // 6: people.v1.PeopleService.Logout:output_type -> people.v1.LogoutResponse
+	7, // 7: people.v1.PeopleService.CheckPermission:output_type -> people.v1.CheckPermissionResponse
+	4, // [4:8] is the sub-list for method output_type
+	0, // [0:4] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name

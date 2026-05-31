@@ -1,0 +1,179 @@
+# 法语
+
+[Unauthorized]
+other = "Non autorisé"
+
+[LangNotFound]
+other = "L'en-tête de langue est requis"
+
+[Forbidden]
+other = "Accès interdit"
+
+[UserNotFound]
+other = "Utilisateur non trouvé"
+
+[TokenInvalid]
+other = "Jeton invalide"
+
+[ParamsInvalid]
+other = "Paramètres de requête invalides"
+
+[SignatureInvalid]
+other = "Erreur de signature"
+
+[PermissionDenied]
+other = "Permission refusée"
+
+[OverTheLimit]
+other = "Limite dépassée"
+
+[InsufficientBalance]
+other = "Solde insuffisant"
+
+[OrderCannotUnstake]
+other = "La commande ne peut pas être désengagée"
+
+[OrderAlreadyExists]
+other = "La commande existe déjà"
+
+[DeviceAlreadyBound]
+other = "Le dispositif est déjà lié à un autre compte"
+
+[ExceedsDailyMiningLimit]
+other = "Dépasse la limite d'exploitation minière quotidienne"
+
+[InvalidInviter]
+other = "Parrain invalide"
+
+[NFTAlreadyUsed]
+other = "Le NFT a déjà été utilisé"
+
+[ExceedsDailyLimit]
+other = "Dépasse la limite quotidienne"
+
+[CannotTransferTo]
+other = "Impossible de transférer à cette adresse"
+
+[InternalServerError]
+other = "Erreur interne du serveur"
+
+[ParameterError]
+other = "Erreur de paramètre"
+
+[NumberCannotBeInfinity]
+other = "Le nombre ne peut pas être infini"
+
+[ThePledgedAmountCannotBeLessThanZero]
+other = "Le montant engagé ne peut pas être inférieur à zéro"
+
+[IllegalOperation]
+other = "Opération illégale"
+
+[LockPeriodHasNotExpiredYet]
+other = "La période de verrouillage n'est pas encore expirée, le désengagement n'est pas autorisé"
+
+[GasPledgeHasNotBeenDevelopedYet]
+other = "L'engagement de gaz (Gas) n'a pas encore été développé, restez à l'écoute"
+
+[CurrencyInformationDoesNotExist]
+other = "Les informations sur la devise n'existent pas"
+
+[RechargeAmountIncorrect]
+other = "Montant de recharge incorrect"
+
+[MinimumRechargeAmount]
+other = "Montant minimum de recharge"
+
+[WithdrawalAmountIsLessThanTheMinimumWithdrawalAmount]
+other = "Le montant du retrait est inférieur au montant minimum de retrait"
+
+[TheWithdrawalAmountIsGreaterThanTheMaximumWithdrawalAmount]
+other = "Le montant du retrait est supérieur au montant maximum de retrait"
+
+[TheWithdrawalFunctionHasNotBeenDevelopedYet]
+other = "La fonction de retrait n'a pas encore été développée"
+
+[TheQuantityCannotBeLessThanZero]
+other = "La quantité ne peut pas être inférieure à zéro"
+
+[AmountIncorrect]
+other = "Montant incorrect"
+
+[TransferAmountIsLessThanTheMinimumTransferAmount]
+other = "Le montant du transfert est inférieur au montant minimum de transfert"
+
+[TheTransferAmountIsGreaterThanTheMaximumTransferAmount]
+other = "Le montant du transfert est supérieur au montant maximum de transfert"
+
+[StakingBaseAddFail]
+other = "Échec de l'ajout de la configuration de mise en jeu"
+
+[StakingBaseEditFail]
+other = "Échec de la modification de la configuration de mise en jeu"
+
+[OrderCreationFailed]
+other = "Échec de la création de la commande"
+
+[StakingOrderAddFail]
+other = "Échec de la mise en jeu"
+
+[TheCurrencyAlreadyExists]
+other = "La devise existe déjà"
+
+[SubscriptionNotYetStarted]
+other = "L'abonnement n'a pas encore commencé"
+
+[SubscriptionHasEnded]
+other = "L'abonnement est terminé"
+
+[AddNodeFail]
+other = "Échec de l'ajout de la commande de nœud"
+
+[EachPersonCanOnlySubscribeToOne]
+other = "Chaque personne ne peut s'abonner qu'à un seul"
+
+[SoldOut]
+other = "Épuisé"
+
+[InvalidUser]
+other = "Utilisateur invalide"
+
+[TheLevelDoesNotMeetTheSubscriptionCriteria]
+other = "Le niveau ne répond pas aux critères d'abonnement"
+
+[YouHaveNotSubscribedToNFTYetPleaseSubscribeToNFTFirstAndThenPledgeIt]
+other = "Vous n'avez pas encore souscrit au NFT. Veuillez d'abord vous abonner au NFT, puis l'engager"
+
+[InvalidPassword]
+other = "Mot de passe invalide"
+
+[AddAirdropFail]
+other = "Échec de l'ajout du airdrop"
+
+[AlreadySignedPleaseDoNotRepeatTheOperation]
+other = "Déjà signé, veuillez ne pas répéter l'opération"
+
+[DoNotRepeatTheOperation]
+other = "Veuillez ne pas répéter l'opération"
+
+[TheTotalRecruitmentAmountMustBeGreaterThan0]
+other = "Le montant total de recrutement doit être supérieur à 0"
+
+[TheRecruitmentCoinPriceMustBeGreaterThan0]
+other = "Le prix de la pièce à recruter doit être supérieur à 0"
+
+[TheRecruitmentPricePerUnitMustBeGreaterThan0]
+other = "Le prix de recrutement par unité (USDT) doit être supérieur à 0"
+
+[TheWaitingTimeMustBeGreaterThanTheCurrentTime]
+other = "Le temps d'attente doit être supérieur à l'heure actuelle"
+
+[TheEndTimeMustBeGreaterThanTheWaitingTime]
+other = "L'heure de fin doit être supérieure à l'heure d'attente"
+
+[HoldingQuantityExceedsTheLimit]
+other = "Dépassement de la limite de détention de machines minières"
+
+[TheModificationProgressCannotBeLessThanThePreviousProgress]
+other = "La progression de la modification ne peut être inférieure à la progression précédente"
+

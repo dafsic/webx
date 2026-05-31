@@ -41,27 +41,27 @@ func (m *Module) Name() string { return ModuleName }
 // Configure implements app.Module.
 func (m *Module) Configure(a *cli.App) {
 	a.Flags = append(a.Flags,
-		&cli.StringFlag{Name: FlagAddr, Value: DefaultAddr, EnvVars: []string{EnvAddr}, Usage: "gRPC listen address"},
-		&cli.BoolFlag{Name: FlagReflection, Value: DefaultReflection, EnvVars: []string{EnvReflection}, Usage: "Enable gRPC server reflection"},
-		&cli.BoolFlag{Name: FlagHealth, Value: DefaultHealth, EnvVars: []string{EnvHealth}, Usage: "Enable grpc.health.v1 service"},
-		&cli.DurationFlag{Name: FlagStopTimeout, Value: 10 * time.Second, EnvVars: []string{EnvStopTimeout}, Usage: "GracefulStop timeout"},
+		&cli.StringFlag{Name: "grpc-addr", Value: DefaultAddr, EnvVars: []string{"GRPC_ADDR"}, Usage: "gRPC listen address"},
+		&cli.BoolFlag{Name: "grpc-reflection", Value: DefaultReflection, EnvVars: []string{"GRPC_REFLECTION"}, Usage: "Enable gRPC server reflection"},
+		&cli.BoolFlag{Name: "grpc-health", Value: DefaultHealth, EnvVars: []string{"GRPC_HEALTH"}, Usage: "Enable grpc.health.v1 service"},
+		&cli.DurationFlag{Name: "grpc-stop-timeout", Value: 10 * time.Second, EnvVars: []string{"GRPC_STOP_TIMEOUT"}, Usage: "GracefulStop timeout"},
 	)
 }
 
 // Install implements app.Module.
 func (m *Module) Install(ctx app.Context) fx.Option {
 	base := []Option{
-		WithAddr(ctx.String(FlagAddr)),
-		WithReflection(ctx.Bool(FlagReflection)),
-		WithHealth(ctx.Bool(FlagHealth)),
-		WithStopTimeout(ctx.Duration(FlagStopTimeout)),
+		WithAddr(ctx.String("grpc-addr")),
+		WithReflection(ctx.Bool("grpc-reflection")),
+		WithHealth(ctx.Bool("grpc-health")),
+		WithStopTimeout(ctx.Duration("grpc-stop-timeout")),
 	}
 
 	return fx.Options(
 		fx.Provide(
 			fx.Annotate(
 				func(extras []Option) []Option { return extras },
-				fx.ParamTags(`group:"`+OptionsGroup+`"`),
+				fx.ParamTags(`group:"grpcserver_options"`),
 			),
 			func(extras []Option) (*Config, error) {
 				cfg := defaultConfig()

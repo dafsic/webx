@@ -1,0 +1,179 @@
+# 日本語
+
+[Unauthorized]
+other = "未認証"
+
+[LangNotFound]
+other = "言語ヘッダーが必要です"
+
+[Forbidden]
+other = "アクセス禁止"
+
+[UserNotFound]
+other = "ユーザーが見つかりません"
+
+[TokenInvalid]
+other = "無効なトークン"
+
+[ParamsInvalid]
+other = "無効なリクエストパラメータ"
+
+[SignatureInvalid]
+other = "署名エラー"
+
+[PermissionDenied]
+other = "権限が拒否されました"
+
+[OverTheLimit]
+other = "制限を超えました"
+
+[InsufficientBalance]
+other = "残高不足"
+
+[OrderCannotUnstake]
+other = "注文はアンステークできません"
+
+[OrderAlreadyExists]
+other = "注文は既に存在します"
+
+[DeviceAlreadyBound]
+other = "デバイスはすでに他のアカウントに紐付けられています"
+
+[ExceedsDailyMiningLimit]
+other = "1日のマイニング上限を超えました"
+
+[InvalidInviter]
+other = "無効な招待者"
+
+[NFTAlreadyUsed]
+other = "NFTはすでに使用されています"
+
+[ExceedsDailyLimit]
+other = "1日の上限を超えました"
+
+[CannotTransferTo]
+other = "このアドレスへ送金できません"
+
+[InternalServerError]
+other = "内部サーバーエラー"
+
+[ParameterError]
+other = "パラメータエラー"
+
+[NumberCannotBeInfinity]
+other = "数値は無限大にできません"
+
+[ThePledgedAmountCannotBeLessThanZero]
+other = "ステーキング額は0より小さくできません"
+
+[IllegalOperation]
+other = "不正な操作"
+
+[LockPeriodHasNotExpiredYet]
+other = "ロック期間がまだ終了していません。ステーキングの解除はできません"
+
+[GasPledgeHasNotBeenDevelopedYet]
+other = "Gasステーキングはまだ開発されていません。お楽しみに"
+
+[CurrencyInformationDoesNotExist]
+other = "通貨情報が存在しません"
+
+[RechargeAmountIncorrect]
+other = "チャージ金額が正しくありません"
+
+[MinimumRechargeAmount]
+other = "最低チャージ金額"
+
+[WithdrawalAmountIsLessThanTheMinimumWithdrawalAmount]
+other = "出金額が最低出金額を下回っています"
+
+[TheWithdrawalAmountIsGreaterThanTheMaximumWithdrawalAmount]
+other = "出金額が最大出金額を超えています"
+
+[TheWithdrawalFunctionHasNotBeenDevelopedYet]
+other = "出金機能はまだ開発されていません"
+
+[TheQuantityCannotBeLessThanZero]
+other = "数量は0未満にできません"
+
+[AmountIncorrect]
+other = "金額が正しくありません"
+
+[TransferAmountIsLessThanTheMinimumTransferAmount]
+other = "送金額が最低送金額を下回っています"
+
+[TheTransferAmountIsGreaterThanTheMaximumTransferAmount]
+other = "送金額が最大送金額を超えています"
+
+[StakingBaseAddFail]
+other = "ステーキング設定の追加に失敗しました"
+
+[StakingBaseEditFail]
+other = "ステーキング設定の編集に失敗しました"
+
+[OrderCreationFailed]
+other = "注文作成に失敗しました"
+
+[StakingOrderAddFail]
+other = "ステーキングに失敗しました"
+
+[TheCurrencyAlreadyExists]
+other = "この通貨は既に存在します"
+
+[SubscriptionNotYetStarted]
+other = "申し込みはまだ開始されていません"
+
+[SubscriptionHasEnded]
+other = "申し込みは終了しました"
+
+[AddNodeFail]
+other = "ノード注文の追加に失敗しました"
+
+[EachPersonCanOnlySubscribeToOne]
+other = "1人につき1つのみ申し込み可能です"
+
+[SoldOut]
+other = "売り切れ"
+
+[InvalidUser]
+other = "無効なユーザー"
+
+[TheLevelDoesNotMeetTheSubscriptionCriteria]
+other = "レベルが申し込み条件を満たしていません"
+
+[YouHaveNotSubscribedToNFTYetPleaseSubscribeToNFTFirstAndThenPledgeIt]
+other = "まだNFTの申し込みをしていません。まずNFTの申し込みを行い、その後ステーキングしてください"
+
+[InvalidPassword]
+other = "無効なパスワード"
+
+[AddAirdropFail]
+other = "エアドロップの追加に失敗しました"
+
+[AlreadySignedPleaseDoNotRepeatTheOperation]
+other = "すでに抽選済みです。繰り返し操作しないでください"
+
+[DoNotRepeatTheOperation]
+other = "繰り返し操作しないでください"
+
+[TheTotalRecruitmentAmountMustBeGreaterThan0]
+other = "総募集額は0より大きくなければなりません"
+
+[TheRecruitmentCoinPriceMustBeGreaterThan0]
+other = "募集コイン価格は0より大きくなければなりません"
+
+[TheRecruitmentPricePerUnitMustBeGreaterThan0]
+other = "1ユニットあたりの募集価格（USDT）は0より大きくなければなりません"
+
+[TheWaitingTimeMustBeGreaterThanTheCurrentTime]
+other = "待機時間は現在時刻より大きくなければなりません"
+
+[TheEndTimeMustBeGreaterThanTheWaitingTime]
+other = "終了時刻は待機時間より大きくなければなりません"
+
+[HoldingQuantityExceedsTheLimit]
+other = "マイニングマシンの所持制限超過"
+
+[TheModificationProgressCannotBeLessThanThePreviousProgress]
+other = "変更の進行状況を前の進行状況より小さくすることはできません"
+

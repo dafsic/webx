@@ -1,0 +1,179 @@
+# 한국어
+
+[Unauthorized]
+other = "권한 없음"
+
+[LangNotFound]
+other = "언어 헤더가 필요합니다"
+
+[Forbidden]
+other = "접근 금지"
+
+[UserNotFound]
+other = "사용자를 찾을 수 없습니다"
+
+[TokenInvalid]
+other = "유효하지 않은 토큰"
+
+[ParamsInvalid]
+other = "잘못된 요청 매개변수"
+
+[SignatureInvalid]
+other = "서명 오류"
+
+[PermissionDenied]
+other = "권한이 거부되었습니다"
+
+[OverTheLimit]
+other = "제한 초과"
+
+[InsufficientBalance]
+other = "잔액 부족"
+
+[OrderCannotUnstake]
+other = "주문을 언스테이킹할 수 없습니다"
+
+[OrderAlreadyExists]
+other = "이미 존재하는 주문입니다"
+
+[DeviceAlreadyBound]
+other = "기기는 이미 다른 계정에 연결되어 있습니다"
+
+[ExceedsDailyMiningLimit]
+other = "일일 마이닝 한도를 초과했습니다"
+
+[InvalidInviter]
+other = "유효하지 않은 초대자"
+
+[NFTAlreadyUsed]
+other = "NFT가 이미 사용되었습니다"
+
+[ExceedsDailyLimit]
+other = "일일 한도를 초과했습니다"
+
+[CannotTransferTo]
+other = "이 주소로 전송할 수 없습니다"
+
+[InternalServerError]
+other = "내부 서버 오류"
+
+[ParameterError]
+other = "매개변수 오류"
+
+[NumberCannotBeInfinity]
+other = "숫자는 무한대일 수 없습니다"
+
+[ThePledgedAmountCannotBeLessThanZero]
+other = "스테이킹 금액은 0보다 작을 수 없습니다"
+
+[IllegalOperation]
+other = "부적절한 작업"
+
+[LockPeriodHasNotExpiredYet]
+other = "잠금 기간이 아직 만료되지 않았습니다. 스테이킹 해제가 불가능합니다"
+
+[GasPledgeHasNotBeenDevelopedYet]
+other = "가스 스테이킹 기능은 아직 개발되지 않았습니다. 기대해 주세요"
+
+[CurrencyInformationDoesNotExist]
+other = "통화 정보가 존재하지 않습니다"
+
+[RechargeAmountIncorrect]
+other = "충전 금액이 올바르지 않습니다"
+
+[MinimumRechargeAmount]
+other = "최소 충전 금액"
+
+[WithdrawalAmountIsLessThanTheMinimumWithdrawalAmount]
+other = "출금 금액이 최소 출금 금액보다 작습니다"
+
+[TheWithdrawalAmountIsGreaterThanTheMaximumWithdrawalAmount]
+other = "출금 금액이 최대 출금 금액을 초과합니다"
+
+[TheWithdrawalFunctionHasNotBeenDevelopedYet]
+other = "출금 기능은 아직 개발되지 않았습니다"
+
+[TheQuantityCannotBeLessThanZero]
+other = "수량은 0보다 작을 수 없습니다"
+
+[AmountIncorrect]
+other = "금액이 올바르지 않습니다"
+
+[TransferAmountIsLessThanTheMinimumTransferAmount]
+other = "전송 금액이 최소 전송 금액보다 작습니다"
+
+[TheTransferAmountIsGreaterThanTheMaximumTransferAmount]
+other = "전송 금액이 최대 전송 금액을 초과합니다"
+
+[StakingBaseAddFail]
+other = "스테이킹 설정 추가에 실패했습니다"
+
+[StakingBaseEditFail]
+other = "스테이킹 설정 수정에 실패했습니다"
+
+[OrderCreationFailed]
+other = "주문 생성 실패"
+
+[StakingOrderAddFail]
+other = "스테이킹 실패"
+
+[TheCurrencyAlreadyExists]
+other = "이미 존재하는 통화입니다"
+
+[SubscriptionNotYetStarted]
+other = "신청이 아직 시작되지 않았습니다"
+
+[SubscriptionHasEnded]
+other = "신청 기간이 종료되었습니다"
+
+[AddNodeFail]
+other = "노드 주문 추가 실패"
+
+[EachPersonCanOnlySubscribeToOne]
+other = "한 사람당 하나만 신청 가능합니다"
+
+[SoldOut]
+other = "매진되었습니다"
+
+[InvalidUser]
+other = "유효하지 않은 사용자"
+
+[TheLevelDoesNotMeetTheSubscriptionCriteria]
+other = "레벨이 신청 기준을 충족하지 않습니다"
+
+[YouHaveNotSubscribedToNFTYetPleaseSubscribeToNFTFirstAndThenPledgeIt]
+other = "아직 NFT 신청을 하지 않으셨습니다. 먼저 NFT를 신청한 후 스테이킹해 주세요"
+
+[InvalidPassword]
+other = "유효하지 않은 비밀번호"
+
+[AddAirdropFail]
+other = "에어드랍 추가 실패"
+
+[AlreadySignedPleaseDoNotRepeatTheOperation]
+other = "이미 서명하셨습니다. 반복하여 수행하지 마세요"
+
+[DoNotRepeatTheOperation]
+other = "반복하여 수행하지 마세요"
+
+[TheTotalRecruitmentAmountMustBeGreaterThan0]
+other = "총 모집 금액은 0보다 커야 합니다"
+
+[TheRecruitmentCoinPriceMustBeGreaterThan0]
+other = "모집 코인 가격은 0보다 커야 합니다"
+
+[TheRecruitmentPricePerUnitMustBeGreaterThan0]
+other = "단위당 모집 가격(USDT)은 0보다 커야 합니다"
+
+[TheWaitingTimeMustBeGreaterThanTheCurrentTime]
+other = "대기 시간은 현재 시간보다 커야 합니다"
+
+[TheEndTimeMustBeGreaterThanTheWaitingTime]
+other = "종료 시간은 대기 시간보다 커야 합니다"
+
+[HoldingQuantityExceedsTheLimit]
+other = "채굴기 보유 한도 초과"
+
+[TheModificationProgressCannotBeLessThanThePreviousProgress]
+other = "수정 진행률은 이전 진행률보다 작을 수 없습니다."
+

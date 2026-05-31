@@ -29,7 +29,7 @@
 //
 //	fx.Supply(fx.Annotate(
 //	    redis.WithPoolSize(64),
-//	    fx.ResultTags(`group:"`+redis.OptionsGroup+`"`),
+//	    fx.ResultTags(`group:"redis_options"`),
 //	))
 package redis
 
@@ -56,54 +56,54 @@ func (m *Module) Name() string { return ModuleName }
 func (m *Module) Configure(a *cli.App) {
 	a.Flags = append(a.Flags,
 		&cli.StringFlag{
-			Name:    FlagAddrs,
+			Name:    "redis-addrs",
 			Value:   DefaultAddr,
-			EnvVars: []string{EnvAddrs},
+			EnvVars: []string{"REDIS_ADDRS"},
 			Usage:   "Redis address(es), comma-separated for cluster/sentinel",
 		},
 		&cli.IntFlag{
-			Name:    FlagDB,
+			Name:    "redis-db",
 			Value:   DefaultDB,
-			EnvVars: []string{EnvDB},
+			EnvVars: []string{"REDIS_DB"},
 			Usage:   "Redis database index (single-node only)",
 		},
 		&cli.StringFlag{
-			Name:    FlagUsername,
-			EnvVars: []string{EnvUsername},
+			Name:    "redis-username",
+			EnvVars: []string{"REDIS_USERNAME"},
 			Usage:   "Redis ACL username (Redis 6+)",
 		},
 		&cli.StringFlag{
-			Name:    FlagPassword,
-			EnvVars: []string{EnvPassword},
+			Name:    "redis-password",
+			EnvVars: []string{"REDIS_PASSWORD"},
 			Usage:   "Redis password",
 		},
 		&cli.StringFlag{
-			Name:    FlagMasterName,
-			EnvVars: []string{EnvMasterName},
+			Name:    "redis-master-name",
+			EnvVars: []string{"REDIS_MASTER_NAME"},
 			Usage:   "Sentinel master name (enables failover mode if set)",
 		},
 		&cli.IntFlag{
-			Name:    FlagPoolSize,
+			Name:    "redis-pool-size",
 			Value:   DefaultPoolSize,
-			EnvVars: []string{EnvPoolSize},
+			EnvVars: []string{"REDIS_POOL_SIZE"},
 			Usage:   "Redis connection pool size",
 		},
 		&cli.DurationFlag{
-			Name:    FlagDialTimeout,
+			Name:    "redis-dial-timeout",
 			Value:   DefaultDialTimeout,
-			EnvVars: []string{EnvDialTimeout},
+			EnvVars: []string{"REDIS_DIAL_TIMEOUT"},
 			Usage:   "Redis dial timeout",
 		},
 		&cli.DurationFlag{
-			Name:    FlagReadTimeout,
+			Name:    "redis-read-timeout",
 			Value:   DefaultReadTimeout,
-			EnvVars: []string{EnvReadTimeout},
+			EnvVars: []string{"REDIS_READ_TIMEOUT"},
 			Usage:   "Redis read timeout",
 		},
 		&cli.DurationFlag{
-			Name:    FlagWriteTimeout,
+			Name:    "redis-write-timeout",
 			Value:   DefaultWriteTimeout,
-			EnvVars: []string{EnvWriteTimeout},
+			EnvVars: []string{"REDIS_WRITE_TIMEOUT"},
 			Usage:   "Redis write timeout",
 		},
 	)
@@ -112,25 +112,25 @@ func (m *Module) Configure(a *cli.App) {
 // Install implements app.Module.
 func (m *Module) Install(ctx app.Context) fx.Option {
 	cliOpts := []Option{
-		WithAddrsCSV(ctx.String(FlagAddrs)),
-		WithDB(ctx.Int(FlagDB)),
-		WithUsername(ctx.String(FlagUsername)),
-		WithPassword(ctx.String(FlagPassword)),
-		WithMasterName(ctx.String(FlagMasterName)),
-		WithPoolSize(ctx.Int(FlagPoolSize)),
-		WithDialTimeout(ctx.Duration(FlagDialTimeout)),
-		WithReadTimeout(ctx.Duration(FlagReadTimeout)),
-		WithWriteTimeout(ctx.Duration(FlagWriteTimeout)),
+		WithAddrsCSV(ctx.String("redis-addrs")),
+		WithDB(ctx.Int("redis-db")),
+		WithUsername(ctx.String("redis-username")),
+		WithPassword(ctx.String("redis-password")),
+		WithMasterName(ctx.String("redis-master-name")),
+		WithPoolSize(ctx.Int("redis-pool-size")),
+		WithDialTimeout(ctx.Duration("redis-dial-timeout")),
+		WithReadTimeout(ctx.Duration("redis-read-timeout")),
+		WithWriteTimeout(ctx.Duration("redis-write-timeout")),
 	}
 
 	return fx.Options(
 		fx.Supply(fx.Annotate(
 			cliOpts,
-			fx.ResultTags(`group:"`+OptionsGroup+`,flatten"`),
+			fx.ResultTags(`group:"redis_options,flatten"`),
 		)),
 		fx.Provide(fx.Annotate(
 			NewConfig,
-			fx.ParamTags(`group:"`+OptionsGroup+`"`),
+			fx.ParamTags(`group:"redis_options"`),
 		)),
 		fx.Provide(newClient),
 	)

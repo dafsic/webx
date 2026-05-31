@@ -19,18 +19,28 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PeopleService_Login_FullMethodName = "/people.v1.PeopleService/Login"
+	PeopleService_GetChallenge_FullMethodName    = "/people.v1.PeopleService/GetChallenge"
+	PeopleService_Login_FullMethodName           = "/people.v1.PeopleService/Login"
+	PeopleService_Logout_FullMethodName          = "/people.v1.PeopleService/Logout"
+	PeopleService_CheckPermission_FullMethodName = "/people.v1.PeopleService/CheckPermission"
 )
 
 // PeopleServiceClient is the client API for PeopleService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// PeopleService manages user accounts and authentication.
+// PeopleService manages EVM wallet accounts, EIP-712 authentication and RBAC.
 type PeopleServiceClient interface {
-	// Login verifies credentials and returns a JWT bound to a Redis-backed
-	// session id (jti).
+	// GetChallenge issues a random nonce that the client must sign with
+	// eth_signTypedData_v4 before calling Login.
+	GetChallenge(ctx context.Context, in *GetChallengeRequest, opts ...grpc.CallOption) (*GetChallengeResponse, error)
+	// Login verifies an EIP-712 signature and returns a JWT session.
+	// First-time wallets are auto-registered.
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	// Logout revokes the caller's JWT session.
+	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
+	// CheckPermission reports whether a user holds a resource+action permission.
+	CheckPermission(ctx context.Context, in *CheckPermissionRequest, opts ...grpc.CallOption) (*CheckPermissionResponse, error)
 }
 
 type peopleServiceClient struct {
@@ -39,6 +49,16 @@ type peopleServiceClient struct {
 
 func NewPeopleServiceClient(cc grpc.ClientConnInterface) PeopleServiceClient {
 	return &peopleServiceClient{cc}
+}
+
+func (c *peopleServiceClient) GetChallenge(ctx context.Context, in *GetChallengeRequest, opts ...grpc.CallOption) (*GetChallengeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetChallengeResponse)
+	err := c.cc.Invoke(ctx, PeopleService_GetChallenge_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *peopleServiceClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
@@ -51,15 +71,42 @@ func (c *peopleServiceClient) Login(ctx context.Context, in *LoginRequest, opts 
 	return out, nil
 }
 
+func (c *peopleServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LogoutResponse)
+	err := c.cc.Invoke(ctx, PeopleService_Logout_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *peopleServiceClient) CheckPermission(ctx context.Context, in *CheckPermissionRequest, opts ...grpc.CallOption) (*CheckPermissionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckPermissionResponse)
+	err := c.cc.Invoke(ctx, PeopleService_CheckPermission_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PeopleServiceServer is the server API for PeopleService service.
 // All implementations should embed UnimplementedPeopleServiceServer
 // for forward compatibility.
 //
-// PeopleService manages user accounts and authentication.
+// PeopleService manages EVM wallet accounts, EIP-712 authentication and RBAC.
 type PeopleServiceServer interface {
-	// Login verifies credentials and returns a JWT bound to a Redis-backed
-	// session id (jti).
+	// GetChallenge issues a random nonce that the client must sign with
+	// eth_signTypedData_v4 before calling Login.
+	GetChallenge(context.Context, *GetChallengeRequest) (*GetChallengeResponse, error)
+	// Login verifies an EIP-712 signature and returns a JWT session.
+	// First-time wallets are auto-registered.
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	// Logout revokes the caller's JWT session.
+	Logout(context.Context, *LogoutRequest) (*LogoutResponse, error)
+	// CheckPermission reports whether a user holds a resource+action permission.
+	CheckPermission(context.Context, *CheckPermissionRequest) (*CheckPermissionResponse, error)
 }
 
 // UnimplementedPeopleServiceServer should be embedded to have
@@ -69,8 +116,17 @@ type PeopleServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedPeopleServiceServer struct{}
 
+func (UnimplementedPeopleServiceServer) GetChallenge(context.Context, *GetChallengeRequest) (*GetChallengeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetChallenge not implemented")
+}
 func (UnimplementedPeopleServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedPeopleServiceServer) Logout(context.Context, *LogoutRequest) (*LogoutResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Logout not implemented")
+}
+func (UnimplementedPeopleServiceServer) CheckPermission(context.Context, *CheckPermissionRequest) (*CheckPermissionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckPermission not implemented")
 }
 func (UnimplementedPeopleServiceServer) testEmbeddedByValue() {}
 
@@ -92,6 +148,24 @@ func RegisterPeopleServiceServer(s grpc.ServiceRegistrar, srv PeopleServiceServe
 	s.RegisterService(&PeopleService_ServiceDesc, srv)
 }
 
+func _PeopleService_GetChallenge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetChallengeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PeopleServiceServer).GetChallenge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PeopleService_GetChallenge_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PeopleServiceServer).GetChallenge(ctx, req.(*GetChallengeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PeopleService_Login_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LoginRequest)
 	if err := dec(in); err != nil {
@@ -110,6 +184,42 @@ func _PeopleService_Login_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PeopleService_Logout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogoutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PeopleServiceServer).Logout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PeopleService_Logout_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PeopleServiceServer).Logout(ctx, req.(*LogoutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PeopleService_CheckPermission_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckPermissionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PeopleServiceServer).CheckPermission(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PeopleService_CheckPermission_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PeopleServiceServer).CheckPermission(ctx, req.(*CheckPermissionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PeopleService_ServiceDesc is the grpc.ServiceDesc for PeopleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -118,8 +228,20 @@ var PeopleService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*PeopleServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "GetChallenge",
+			Handler:    _PeopleService_GetChallenge_Handler,
+		},
+		{
 			MethodName: "Login",
 			Handler:    _PeopleService_Login_Handler,
+		},
+		{
+			MethodName: "Logout",
+			Handler:    _PeopleService_Logout_Handler,
+		},
+		{
+			MethodName: "CheckPermission",
+			Handler:    _PeopleService_CheckPermission_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

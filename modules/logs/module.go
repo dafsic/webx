@@ -22,7 +22,7 @@
 //
 //	fx.Supply(fx.Annotate(
 //	    logs.WithSource(true),
-//	    fx.ResultTags(`group:"`+logs.OptionsGroup+`"`),
+//	    fx.ResultTags(`group:"logs_options"`),
 //	))
 package logs
 
@@ -54,15 +54,15 @@ func (m *Module) Name() string { return ModuleName }
 func (m *Module) Configure(a *cli.App) {
 	a.Flags = append(a.Flags,
 		&cli.StringFlag{
-			Name:    FlagLevel,
+			Name:    "log-level",
 			Value:   DefaultLevel,
-			EnvVars: []string{EnvLevel},
+			EnvVars: []string{"LOG_LEVEL"},
 			Usage:   "Log level (debug | info | warn | error | panic)",
 		},
 		&cli.StringFlag{
-			Name:    FlagFormat,
+			Name:    "log-format",
 			Value:   DefaultFormat,
-			EnvVars: []string{EnvFormat},
+			EnvVars: []string{"LOG_FORMAT"},
 			Usage:   "Log format (text | json)",
 		},
 	)
@@ -76,20 +76,20 @@ func (m *Module) Configure(a *cli.App) {
 // overwrite earlier ones).
 func (m *Module) Install(ctx app.Context) fx.Option {
 	cliOpts := []Option{
-		WithLevel(ctx.String(FlagLevel)),
-		WithFormat(ctx.String(FlagFormat)),
+		WithLevel(ctx.String("log-level")),
+		WithFormat(ctx.String("log-format")),
 	}
 
 	return fx.Options(
 		// Push the CLI-derived options into the group.
 		fx.Supply(fx.Annotate(
 			cliOpts,
-			fx.ResultTags(`group:"`+OptionsGroup+`,flatten"`),
+			fx.ResultTags(`group:"logs_options,flatten"`),
 		)),
 		// Build the Config by collecting all Options from the group.
 		fx.Provide(fx.Annotate(
 			NewConfig,
-			fx.ParamTags(`group:"`+OptionsGroup+`"`),
+			fx.ParamTags(`group:"logs_options"`),
 		)),
 		// Build the Logger from the Config.
 		fx.Provide(newLogger, exposeLevelVar),
