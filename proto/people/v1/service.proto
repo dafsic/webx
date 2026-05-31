@@ -19,7 +19,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
 // PeopleService manages EVM wallet accounts, EIP-712 authentication and RBAC.
 service PeopleService {
   // GetChallenge issues a random nonce that the client must sign with
-  // eth_signTypedData_v4 before calling Login.
+  // personal_sign (EIP-191) before calling Login.
   rpc GetChallenge(GetChallengeRequest) returns (GetChallengeResponse) {
     option (google.api.http) = {
       post: "/api/v1/people:getChallenge"
@@ -31,15 +31,15 @@ service PeopleService {
     };
   }
 
-  // Login verifies an EIP-712 signature and returns a JWT session.
-  // First-time wallets are auto-registered.
+  // Login verifies an EIP-191 personal_sign signature and returns a JWT
+  // session. First-time wallets are auto-registered.
   rpc Login(LoginRequest) returns (LoginResponse) {
     option (google.api.http) = {
       post: "/api/v1/people:login"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "EIP-712 登录"
+      summary: "EIP-191 登录"
       tags: "people"
     };
   }

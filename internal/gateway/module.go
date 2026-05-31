@@ -1,165 +1,138 @@
-// Package gateway holds the HTTP gateway in charge of receiving REST traffic
-// from the outside world, validating JWTs and forwarding the calls to the
-// internal gRPC microservices via the grpc-gateway runtime.
-package gateway
+// Command gateway is the public HTTP entry point for the webx platform.
+//
+// It runs a grpc-gateway reverse proxy: browsers and external clients speak
+// HTTP/JSON to this service, which translates each request into a gRPC call to
+// the appropriate backend microservice (e.g. people). REST mappings and the
+// OpenAPI documentation are both derived from the .proto definitions, so adding
+// or changing an endpoint only requires regenerating proto_go.
+//
+// Endpoints:
+//
+//	/api/v1/...     — REST routes proxied to backend gRPC services
+//	/docs           — Swagger UI
+//	/openapi.json   — generated OpenAPI (swagger 2.0) document
+package main
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
-	"time"
 
 	"github.com/dafsic/webx/app"
-	"github.com/dafsic/webx/modules/grpcclient"
-	"github.com/dafsic/webx/pkg/authmd"
-	peoplev1 "github.com/dafsic/webx/proto_go/people/v1"
-	"github.com/gin-gonic/gin"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/dafsic/webx/modules/logs"
+	"github.com/dafsic/webx/utils"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/fx"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 )
 
-// Flag identifiers for the gateway module.
-const (
-	ModuleName = "gateway"
-
-	DefaultPeopleAddr  = "people:50051"
-	DefaultJWTTTL      = 24 * time.Hour
-	DefaultJWTIssuer   = "webx-people"
-	DefaultSwaggerFile = "proto_go/webx.swagger.json"
-)
-
-// Module wires the gateway business logic onto the gin engine provided by
-// modules/ginserver. It does NOT own the HTTP server itself.
+// Module is the gateway module.
 type Module struct{}
 
-// New returns a Module.
+// New returns a new gateway Module.
 func New() *Module { return &Module{} }
 
 // Name implements app.Module.
-func (m *Module) Name() string { return ModuleName }
+func (m *Module) Name() string { return moduleName }
 
 // Configure implements app.Module.
 func (m *Module) Configure(a *cli.App) {
 	a.Flags = append(a.Flags,
-		&cli.StringFlag{Name: "people-grpc-addr", Value: DefaultPeopleAddr, Usage: "people service gRPC target"},
-		&cli.StringFlag{Name: "jwt-secret", Usage: "JWT secret (must match people service)"},
-		&cli.DurationFlag{Name: "jwt-ttl", Value: DefaultJWTTTL, Usage: "Expected token TTL (used for refresh policy)"},
-		&cli.StringFlag{Name: "jwt-issuer", Value: DefaultJWTIssuer, Usage: "Expected token issuer"},
-		&cli.BoolFlag{Name: "swagger-enable", Value: true, Usage: "Expose /swagger UI + /swagger/swagger.json"},
-		&cli.StringFlag{Name: "swagger-file", Value: DefaultSwaggerFile, Usage: "Path to merged openapi swagger.json"},
+		&cli.StringFlag{
+			Name:    "gateway-http-addr",
+			Value:   defaultHTTPAddr,
+			EnvVars: []string{"GATEWAY_HTTP_ADDR"},
+			Usage:   "HTTP listen address",
+		},
+		&cli.StringFlag{
+			Name:    "gateway-jwt-secret",
+			EnvVars: []string{"GATEWAY_JWT_SECRET"},
+			Usage:   "HS256 secret shared with the people service for token validation (required)",
+		},
+		&cli.StringFlag{
+			Name:    "gateway-people-addr",
+			Value:   defaultPeopleAddr,
+			EnvVars: []string{"GATEWAY_PEOPLE_ADDR"},
+			Usage:   "people service gRPC endpoint",
+		},
+		&cli.StringFlag{
+			Name:    "gateway-openapi-spec",
+			Value:   defaultOpenAPISpec,
+			EnvVars: []string{"GATEWAY_OPENAPI_SPEC"},
+			Usage:   "path to the generated OpenAPI swagger JSON (empty disables /docs)",
+		},
+		&cli.StringFlag{
+			Name:    "gateway-cors-origins",
+			Value:   defaultCORSOrigins,
+			EnvVars: []string{"GATEWAY_CORS_ORIGINS"},
+			Usage:   "comma-separated allowed CORS origins, or * for any",
+		},
 	)
 }
 
 // Install implements app.Module.
 func (m *Module) Install(ctx app.Context) fx.Option {
-	peopleAddr := ctx.String("people-grpc-addr")
-	secret := ctx.String("jwt-secret")
-	ttl := ctx.Duration("jwt-ttl")
-	issuer := ctx.String("jwt-issuer")
-	swaggerEnable := ctx.Bool("swagger-enable")
-	swaggerFile := ctx.String("swagger-file")
+	cfg := &Config{
+		HTTPAddr:    ctx.String("gateway-http-addr"),
+		JWTSecret:   ctx.String("gateway-jwt-secret"),
+		PeopleAddr:  ctx.String("gateway-people-addr"),
+		OpenAPISpec: ctx.String("gateway-openapi-spec"),
+		CORSOrigins: utils.StrSplit(ctx.String("gateway-cors-origins")),
+	}
 
 	return fx.Options(
-		fx.Provide(func() (*authmd.Signer, error) { return authmd.New(secret, ttl, issuer) }),
-		fx.Invoke(func(lc fx.Lifecycle, r *gin.Engine, d *grpcclient.Dialer,
-			signer *authmd.Signer, logger *slog.Logger) error {
-
-			startCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-
-			peopleCC, err := d.Dial(startCtx, peopleAddr)
-			if err != nil {
-				return fmt.Errorf("gateway: dial people: %w", err)
-			}
-
-			mux := runtime.NewServeMux(
-				runtime.WithMetadata(forwardAuthMetadata(signer)),
-				runtime.WithErrorHandler(errorHandler),
-			)
-			if err := peoplev1.RegisterPeopleServiceHandler(startCtx, mux, peopleCC); err != nil {
-				return fmt.Errorf("gateway: register people: %w", err)
-			}
-
-			r.GET("/healthz", func(c *gin.Context) { c.Status(http.StatusNoContent) })
-			r.Any("/api/*p", gin.WrapH(mux))
-
-			if swaggerEnable {
-				registerSwagger(r, swaggerFile)
-				logger.Info("gateway: swagger enabled", "path", "/swagger", "spec", swaggerFile)
-			}
-
-			lc.Append(fx.Hook{
-				OnStop: func(_ context.Context) error { return peopleCC.Close() },
-			})
-			return nil
-		}),
+		fx.Supply(cfg),
+		fx.Invoke(runHTTPServer),
 	)
 }
 
-// forwardAuthMetadata is invoked by grpc-gateway runtime for every request:
-// we parse the bearer token (when present) and put uid/jti onto outgoing
-// metadata. Missing/invalid tokens simply don't get metadata; downstream
-// services that need auth can return Unauthenticated themselves.
-func forwardAuthMetadata(signer *authmd.Signer) func(context.Context, *http.Request) metadata.MD {
-	return func(ctx context.Context, r *http.Request) metadata.MD {
-		md := metadata.MD{}
-		if rid, ok := ctx.Value(ginRequestIDKey{}).(string); ok && rid != "" {
-			md.Set("x-request-id", rid)
-		}
-		h := r.Header.Get("Authorization")
-		const prefix = "Bearer "
-		if !strings.HasPrefix(h, prefix) {
-			return md
-		}
-		claims, err := signer.Parse(strings.TrimPrefix(h, prefix))
-		if err != nil {
-			return md
-		}
-		md.Set(authmd.MDUserID, fmt.Sprintf("%d", claims.UserID))
-		md.Set(authmd.MDJTI, claims.ID)
-		return md
+// runHTTPServer builds the gateway handler and wires the HTTP server into the
+// fx lifecycle.
+func runHTTPServer(lc fx.Lifecycle, cfg *Config, logger *slog.Logger) error {
+	if cfg.JWTSecret == "" {
+		return fmt.Errorf("gateway: --gateway-jwt-secret (GATEWAY_JWT_SECRET) is required")
 	}
-}
 
-type ginRequestIDKey struct{}
+	// A long-lived context bounds the gRPC client connections created by the
+	// gateway handlers; it is cancelled on shutdown.
+	ctx, cancel := context.WithCancel(context.Background())
 
-// errorHandler converts a gRPC status error to a JSON HTTP response with the
-// same shape every endpoint uses.
-func errorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
-	st, _ := status.FromError(err)
-	code := runtime.HTTPStatusFromCode(st.Code())
-	body := map[string]any{
-		"code":    st.Code().String(),
-		"message": st.Message(),
+	handler, err := buildHandler(ctx, cfg, logger)
+	if err != nil {
+		cancel()
+		return err
 	}
-	if details := st.Details(); len(details) > 0 {
-		body["details"] = details
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	_ = marshaler.NewEncoder(w).Encode(body)
-}
 
-// registerSwagger mounts the swagger spec at /swagger/swagger.json and a
-// simple HTML at /swagger that loads swagger-ui from a public CDN.
-func registerSwagger(r *gin.Engine, specPath string) {
-	r.StaticFile("/swagger/swagger.json", specPath)
-	r.GET("/swagger", func(c *gin.Context) {
-		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(swaggerHTML))
+	srv := &http.Server{Addr: cfg.HTTPAddr, Handler: handler}
+
+	lc.Append(fx.Hook{
+		OnStart: func(_ context.Context) error {
+			go func() {
+				logger.Info("gateway: HTTP server listening", "addr", cfg.HTTPAddr)
+				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					logger.Error("gateway: HTTP server stopped", "err", err)
+				}
+			}()
+			return nil
+		},
+		OnStop: func(stopCtx context.Context) error {
+			cancel()
+			if err := srv.Shutdown(stopCtx); err != nil {
+				return fmt.Errorf("gateway: shutdown: %w", err)
+			}
+			return nil
+		},
 	})
+	return nil
 }
 
-const swaggerHTML = `<!DOCTYPE html>
-<html><head><title>Webx API</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
-</head><body>
-<div id="swagger-ui"></div>
-<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
-<script>
-window.onload = () => SwaggerUIBundle({url: "/swagger/swagger.json", dom_id: "#swagger-ui"});
-</script></body></html>`
+func main() {
+	a := app.NewApplication("gateway", "Webx HTTP/JSON ⇆ gRPC gateway")
+	a.Install(
+		logs.New(),
+		New(),
+	)
+	if err := a.Run(); err != nil {
+		panic(err)
+	}
+}

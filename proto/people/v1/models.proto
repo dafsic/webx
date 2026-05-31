@@ -39,14 +39,14 @@ message GetChallengeRequest {
 }
 
 message GetChallengeResponse {
-  string nonce = 1;  // random nonce to sign with eth_signTypedData_v4
+  string nonce = 1;  // random nonce to sign with personal_sign (EIP-191)
 }
 
 // ── Login ─────────────────────────────────────────────────────────────────
 
 message LoginRequest {
   string address   = 1;  // EVM wallet address (must match the signed nonce)
-  string signature = 2;  // EIP-712 signature over Login{nonce} (hex, 65 bytes)
+  string signature = 2;  // EIP-191 personal_sign signature (hex, 65 bytes)
 }
 
 message LoginResponse {

@@ -12,7 +12,6 @@ type User struct {
 	Nickname  *string    `db:"nickname"      json:"nickname"`
 	AvatarURL *string    `db:"avatar_url"    json:"avatar_url"`
 	Email     *string    `db:"email"         json:"email"`
-	LoginIP   *string    `db:"login_ip"      json:"login_ip"`
 	CreatedAt *time.Time `db:"created_at"    json:"created_at"`
 	UpdatedAt *time.Time `db:"updated_at"    json:"updated_at"`
 }
