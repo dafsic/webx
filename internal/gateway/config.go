@@ -6,6 +6,8 @@ const (
 
 	defaultHTTPAddr     = ":8080"
 	defaultPeopleAddr   = "127.0.0.1:50051"
+	defaultCatalogAddr  = "127.0.0.1:50052"
+	defaultOrdersAddr   = "127.0.0.1:50053"
 	defaultOpenAPISpec  = "./proto_go/webx.swagger.json"
 	defaultCORSOrigins  = "*"
 )
@@ -19,6 +21,10 @@ type Config struct {
 	JWTSecret string
 	// PeopleAddr is the gRPC endpoint of the people microservice.
 	PeopleAddr string
+	// CatalogAddr is the gRPC endpoint of the catalog microservice.
+	CatalogAddr string
+	// OrdersAddr is the gRPC endpoint of the orders microservice.
+	OrdersAddr string
 	// OpenAPISpec is the path to the generated swagger JSON served under /docs.
 	// Empty or missing file disables the docs endpoints.
 	OpenAPISpec string

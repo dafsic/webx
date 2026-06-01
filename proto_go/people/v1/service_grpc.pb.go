@@ -32,10 +32,10 @@ const (
 // PeopleService manages EVM wallet accounts, EIP-712 authentication and RBAC.
 type PeopleServiceClient interface {
 	// GetChallenge issues a random nonce that the client must sign with
-	// eth_signTypedData_v4 before calling Login.
+	// personal_sign (EIP-191) before calling Login.
 	GetChallenge(ctx context.Context, in *GetChallengeRequest, opts ...grpc.CallOption) (*GetChallengeResponse, error)
-	// Login verifies an EIP-712 signature and returns a JWT session.
-	// First-time wallets are auto-registered.
+	// Login verifies an EIP-191 personal_sign signature and returns a JWT
+	// session. First-time wallets are auto-registered.
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	// Logout revokes the caller's JWT session.
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
@@ -98,10 +98,10 @@ func (c *peopleServiceClient) CheckPermission(ctx context.Context, in *CheckPerm
 // PeopleService manages EVM wallet accounts, EIP-712 authentication and RBAC.
 type PeopleServiceServer interface {
 	// GetChallenge issues a random nonce that the client must sign with
-	// eth_signTypedData_v4 before calling Login.
+	// personal_sign (EIP-191) before calling Login.
 	GetChallenge(context.Context, *GetChallengeRequest) (*GetChallengeResponse, error)
-	// Login verifies an EIP-712 signature and returns a JWT session.
-	// First-time wallets are auto-registered.
+	// Login verifies an EIP-191 personal_sign signature and returns a JWT
+	// session. First-time wallets are auto-registered.
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	// Logout revokes the caller's JWT session.
 	Logout(context.Context, *LogoutRequest) (*LogoutResponse, error)

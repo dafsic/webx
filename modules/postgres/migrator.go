@@ -13,6 +13,11 @@ import (
 // driverName is the database/sql driver name used only for sql-migrate.
 const driverName = "pgx"
 
+// migrateDialect is the sql-migrate dialect for PostgreSQL. It is distinct from
+// driverName: sql-migrate keys its SQL dialects by name ("postgres"), not by
+// the underlying database/sql driver ("pgx").
+const migrateDialect = "postgres"
+
 // MigrationResult summarizes a migration run.
 type MigrationResult struct {
 	Applied int
@@ -53,7 +58,7 @@ func (m *Migrator) Status() ([]*migrate.MigrationRecord, error) {
 	defer db.Close()
 	migrate.SetTable(m.cfg.MigrateTable)
 	migrate.SetSchema(m.cfg.MigrateSchema)
-	return migrate.GetMigrationRecords(db, driverName)
+	return migrate.GetMigrationRecords(db, migrateDialect)
 }
 
 func (m *Migrator) exec(dir migrate.MigrationDirection) (*MigrationResult, error) {
@@ -78,7 +83,7 @@ func (m *Migrator) exec(dir migrate.MigrationDirection) (*MigrationResult, error
 		"schema", m.cfg.MigrateSchema,
 	)
 
-	applied, err := migrate.Exec(db, driverName, source, dir)
+	applied, err := migrate.Exec(db, migrateDialect, source, dir)
 	if err != nil {
 		return nil, fmt.Errorf("postgres: migrate %s: %w", directionName(dir), err)
 	}

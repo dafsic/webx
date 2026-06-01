@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package catalog.v1;
+
+option go_package = "github.com/dafsic/webx/proto_go/catalog/v1;catalogv1";
+
+// MenuItem is a single sellable product on the bar menu.
+message MenuItem {
+  int64  id          = 1;
+  string name        = 2;
+  string description = 3;
+  // price_cents is the unit price in the smallest currency unit (e.g. cents),
+  // stored as an integer to avoid floating-point rounding.
+  int64  price_cents = 4;
+  // available reports whether the item can currently be ordered.
+  bool   available   = 5;
+  int64  created_at  = 6; // Unix seconds.
+  int64  updated_at  = 7; // Unix seconds.
+}
+
+// ── ListItems ─────────────────────────────────────────────────────────────
+
+message ListItemsRequest {
+  // available_only restricts the result to items currently orderable.
+  bool available_only = 1;
+}
+
+message ListItemsResponse {
+  repeated MenuItem items = 1;
+}
+
+// ── GetItem ───────────────────────────────────────────────────────────────
+
+message GetItemRequest {
+  int64 id = 1;
+}
+
+message GetItemResponse {
+  MenuItem item = 1;
+}
+
+// ── CreateItem ────────────────────────────────────────────────────────────
+
+message CreateItemRequest {
+  string name        = 1;
+  string description  = 2;
+  int64  price_cents = 3;
+  bool   available   = 4;
+}
+
+message CreateItemResponse {
+  MenuItem item = 1;
+}
+
+// ── UpdateItem ────────────────────────────────────────────────────────────
+
+message UpdateItemRequest {
+  int64  id          = 1;
+  string name        = 2;
+  string description  = 3;
+  int64  price_cents = 4;
+  bool   available   = 5;
+}
+
+message UpdateItemResponse {
+  MenuItem item = 1;
+}
+
+// ── DeleteItem ────────────────────────────────────────────────────────────
+
+message DeleteItemRequest {
+  int64 id = 1;
+}
+
+message DeleteItemResponse {}

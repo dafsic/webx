@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package orders.v1;
+
+option go_package = "github.com/dafsic/webx/proto_go/orders/v1;ordersv1";
+
+// OrderStatus is the lifecycle state of an order.
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_PENDING     = 1; // created, awaiting payment
+  ORDER_STATUS_PAID        = 2; // paid, queued for the kitchen/bar
+  ORDER_STATUS_PREPARING   = 3; // being prepared (KDS)
+  ORDER_STATUS_SERVED      = 4; // delivered to the table
+  ORDER_STATUS_CANCELLED   = 5; // cancelled
+}
+
+// OrderItem is a single line of an order. name and unit_price_cents are
+// snapshots taken from the catalog at creation time so later menu edits do not
+// change historical orders.
+message OrderItem {
+  int64  id               = 1;
+  int64  order_id         = 2;
+  int64  menu_item_id     = 3;
+  string name             = 4; // snapshot of the menu item name
+  int64  unit_price_cents = 5; // snapshot of the unit price
+  int32  quantity         = 6;
+  int64  subtotal_cents   = 7; // unit_price_cents * quantity
+}
+
+// Order is a customer's order placed from a table.
+message Order {
+  int64              id          = 1;
+  string             table_no    = 2;
+  OrderStatus        status      = 3;
+  int64              total_cents = 4;
+  string             note        = 5;
+  repeated OrderItem items       = 6;
+  int64              created_at  = 7; // Unix seconds.
+  int64              updated_at  = 8; // Unix seconds.
+}
+
+// ── CreateOrder ─────────────────────────────────────────────────────────────
+
+// CreateOrderLine is a requested line: a menu item id and a quantity. The
+// server resolves the name and price from the catalog service.
+message CreateOrderLine {
+  int64 menu_item_id = 1;
+  int32 quantity     = 2;
+}
+
+message CreateOrderRequest {
+  string                   table_no = 1;
+  string                   note     = 2;
+  repeated CreateOrderLine items    = 3;
+}
+
+message CreateOrderResponse {
+  Order order = 1;
+}
+
+// ── GetOrder ────────────────────────────────────────────────────────────────
+
+message GetOrderRequest {
+  int64 id = 1;
+}
+
+message GetOrderResponse {
+  Order order = 1;
+}
+
+// ── ListOrders ──────────────────────────────────────────────────────────────
+
+message ListOrdersRequest {
+  // status filters the result. ORDER_STATUS_UNSPECIFIED returns every order.
+  OrderStatus status = 1;
+}
+
+message ListOrdersResponse {
+  repeated Order orders = 1;
+}
+
+// ── UpdateOrderStatus ───────────────────────────────────────────────────────
+
+message UpdateOrderStatusRequest {
+  int64       id     = 1;
+  OrderStatus status = 2;
+}
+
+message UpdateOrderStatusResponse {
+  Order order = 1;
+}

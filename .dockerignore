@@ -1,0 +1,20 @@
+# Keep the Docker build context small and reproducible.
+.git
+.gitignore
+*.md
+**/*_test.go
+
+# Local tooling / editor
+.vscode
+.idea
+.DS_Store
+
+# Docker assets themselves
+docker-compose.yml
+Dockerfile
+.dockerignore
+docker/
+
+# Build output
+bin/
+dist/

@@ -8,6 +8,12 @@
   "tags": [
     {
       "name": "PeopleService"
+    },
+    {
+      "name": "CatalogService"
+    },
+    {
+      "name": "OrderService"
     }
   ],
   "consumes": [
@@ -17,6 +23,313 @@
     "application/json"
   ],
   "paths": {
+    "/api/v1/catalog/items": {
+      "get": {
+        "summary": "获取菜单列表",
+        "operationId": "CatalogService_ListItems",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListItemsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "available_only",
+            "description": "available_only restricts the result to items currently orderable.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "catalog"
+        ]
+      },
+      "post": {
+        "summary": "新增菜品",
+        "operationId": "CatalogService_CreateItem",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateItemResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateItemRequest"
+            }
+          }
+        ],
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/catalog/items/{id}": {
+      "get": {
+        "summary": "获取单个菜品",
+        "operationId": "CatalogService_GetItem",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetItemResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "catalog"
+        ]
+      },
+      "delete": {
+        "summary": "删除菜品",
+        "operationId": "CatalogService_DeleteItem",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteItemResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "catalog"
+        ]
+      },
+      "patch": {
+        "summary": "修改菜品",
+        "operationId": "CatalogService_UpdateItem",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateItemResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CatalogServiceUpdateItemBody"
+            }
+          }
+        ],
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/orders": {
+      "get": {
+        "summary": "订单列表",
+        "operationId": "OrderService_ListOrders",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListOrdersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "status",
+            "description": "status filters the result. ORDER_STATUS_UNSPECIFIED returns every order.\n\n - ORDER_STATUS_PENDING: created, awaiting payment\n - ORDER_STATUS_PAID: paid, queued for the kitchen/bar\n - ORDER_STATUS_PREPARING: being prepared (KDS)\n - ORDER_STATUS_SERVED: delivered to the table\n - ORDER_STATUS_CANCELLED: cancelled",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "ORDER_STATUS_UNSPECIFIED",
+              "ORDER_STATUS_PENDING",
+              "ORDER_STATUS_PAID",
+              "ORDER_STATUS_PREPARING",
+              "ORDER_STATUS_SERVED",
+              "ORDER_STATUS_CANCELLED"
+            ],
+            "default": "ORDER_STATUS_UNSPECIFIED"
+          }
+        ],
+        "tags": [
+          "orders"
+        ]
+      },
+      "post": {
+        "summary": "下单",
+        "operationId": "OrderService_CreateOrder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateOrderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateOrderRequest"
+            }
+          }
+        ],
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/orders/{id}": {
+      "get": {
+        "summary": "查询订单",
+        "operationId": "OrderService_GetOrder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetOrderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/status": {
+      "patch": {
+        "summary": "更新订单状态",
+        "operationId": "OrderService_UpdateOrderStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateOrderStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/OrderServiceUpdateOrderStatusBody"
+            }
+          }
+        ],
+        "tags": [
+          "orders"
+        ]
+      }
+    },
     "/api/v1/people:checkPermission": {
       "post": {
         "summary": "权限检查",
@@ -85,7 +398,7 @@
     },
     "/api/v1/people:login": {
       "post": {
-        "summary": "EIP-712 登录",
+        "summary": "EIP-191 登录",
         "operationId": "PeopleService_Login",
         "responses": {
           "200": {
@@ -151,6 +464,32 @@
     }
   },
   "definitions": {
+    "CatalogServiceUpdateItemBody": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "price_cents": {
+          "type": "string",
+          "format": "int64"
+        },
+        "available": {
+          "type": "boolean"
+        }
+      }
+    },
+    "OrderServiceUpdateOrderStatusBody": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/v1OrderStatus"
+        }
+      }
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -202,6 +541,75 @@
         }
       }
     },
+    "v1CreateItemRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "price_cents": {
+          "type": "string",
+          "format": "int64"
+        },
+        "available": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1CreateItemResponse": {
+      "type": "object",
+      "properties": {
+        "item": {
+          "$ref": "#/definitions/v1MenuItem"
+        }
+      }
+    },
+    "v1CreateOrderLine": {
+      "type": "object",
+      "properties": {
+        "menu_item_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "quantity": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "description": "CreateOrderLine is a requested line: a menu item id and a quantity. The\nserver resolves the name and price from the catalog service."
+    },
+    "v1CreateOrderRequest": {
+      "type": "object",
+      "properties": {
+        "table_no": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1CreateOrderLine"
+          }
+        }
+      }
+    },
+    "v1CreateOrderResponse": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "$ref": "#/definitions/v1Order"
+        }
+      }
+    },
+    "v1DeleteItemResponse": {
+      "type": "object"
+    },
     "v1GetChallengeRequest": {
       "type": "object",
       "properties": {
@@ -216,7 +624,47 @@
       "properties": {
         "nonce": {
           "type": "string",
-          "title": "random nonce to sign with eth_signTypedData_v4"
+          "title": "random nonce to sign with personal_sign (EIP-191)"
+        }
+      }
+    },
+    "v1GetItemResponse": {
+      "type": "object",
+      "properties": {
+        "item": {
+          "$ref": "#/definitions/v1MenuItem"
+        }
+      }
+    },
+    "v1GetOrderResponse": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "$ref": "#/definitions/v1Order"
+        }
+      }
+    },
+    "v1ListItemsResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1MenuItem"
+          }
+        }
+      }
+    },
+    "v1ListOrdersResponse": {
+      "type": "object",
+      "properties": {
+        "orders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Order"
+          }
         }
       }
     },
@@ -229,7 +677,7 @@
         },
         "signature": {
           "type": "string",
-          "title": "EIP-712 signature over Login{nonce} (hex, 65 bytes)"
+          "title": "EIP-191 personal_sign signature (hex, 65 bytes)"
         }
       }
     },
@@ -258,6 +706,130 @@
     },
     "v1LogoutResponse": {
       "type": "object"
+    },
+    "v1MenuItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "price_cents": {
+          "type": "string",
+          "format": "int64",
+          "description": "price_cents is the unit price in the smallest currency unit (e.g. cents),\nstored as an integer to avoid floating-point rounding."
+        },
+        "available": {
+          "type": "boolean",
+          "description": "available reports whether the item can currently be ordered."
+        },
+        "created_at": {
+          "type": "string",
+          "format": "int64",
+          "description": "Unix seconds."
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "int64",
+          "description": "Unix seconds."
+        }
+      },
+      "description": "MenuItem is a single sellable product on the bar menu."
+    },
+    "v1Order": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "table_no": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/v1OrderStatus"
+        },
+        "total_cents": {
+          "type": "string",
+          "format": "int64"
+        },
+        "note": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1OrderItem"
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "int64",
+          "description": "Unix seconds."
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "int64",
+          "description": "Unix seconds."
+        }
+      },
+      "description": "Order is a customer's order placed from a table."
+    },
+    "v1OrderItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "order_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "menu_item_id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string",
+          "title": "snapshot of the menu item name"
+        },
+        "unit_price_cents": {
+          "type": "string",
+          "format": "int64",
+          "title": "snapshot of the unit price"
+        },
+        "quantity": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "subtotal_cents": {
+          "type": "string",
+          "format": "int64",
+          "title": "unit_price_cents * quantity"
+        }
+      },
+      "description": "OrderItem is a single line of an order. name and unit_price_cents are\nsnapshots taken from the catalog at creation time so later menu edits do not\nchange historical orders."
+    },
+    "v1OrderStatus": {
+      "type": "string",
+      "enum": [
+        "ORDER_STATUS_UNSPECIFIED",
+        "ORDER_STATUS_PENDING",
+        "ORDER_STATUS_PAID",
+        "ORDER_STATUS_PREPARING",
+        "ORDER_STATUS_SERVED",
+        "ORDER_STATUS_CANCELLED"
+      ],
+      "default": "ORDER_STATUS_UNSPECIFIED",
+      "description": "OrderStatus is the lifecycle state of an order.\n\n - ORDER_STATUS_PENDING: created, awaiting payment\n - ORDER_STATUS_PAID: paid, queued for the kitchen/bar\n - ORDER_STATUS_PREPARING: being prepared (KDS)\n - ORDER_STATUS_SERVED: delivered to the table\n - ORDER_STATUS_CANCELLED: cancelled"
     },
     "v1Permission": {
       "type": "object",
@@ -300,6 +872,22 @@
         }
       },
       "description": "Role is a named collection of permissions assignable to users."
+    },
+    "v1UpdateItemResponse": {
+      "type": "object",
+      "properties": {
+        "item": {
+          "$ref": "#/definitions/v1MenuItem"
+        }
+      }
+    },
+    "v1UpdateOrderStatusResponse": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "$ref": "#/definitions/v1Order"
+        }
+      }
     },
     "v1User": {
       "type": "object",

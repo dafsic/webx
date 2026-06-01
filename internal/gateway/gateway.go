@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 
+	catalogv1 "github.com/dafsic/webx/proto_go/catalog/v1"
+	ordersv1 "github.com/dafsic/webx/proto_go/orders/v1"
 	peoplev1 "github.com/dafsic/webx/proto_go/people/v1"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
@@ -51,6 +53,16 @@ func buildHandler(ctx context.Context, cfg *Config, logger *slog.Logger) (http.H
 		ctx, gwMux, cfg.PeopleAddr, dialOpts,
 	); err != nil {
 		return nil, fmt.Errorf("gateway: register people handler: %w", err)
+	}
+	if err := catalogv1.RegisterCatalogServiceHandlerFromEndpoint(
+		ctx, gwMux, cfg.CatalogAddr, dialOpts,
+	); err != nil {
+		return nil, fmt.Errorf("gateway: register catalog handler: %w", err)
+	}
+	if err := ordersv1.RegisterOrderServiceHandlerFromEndpoint(
+		ctx, gwMux, cfg.OrdersAddr, dialOpts,
+	); err != nil {
+		return nil, fmt.Errorf("gateway: register orders handler: %w", err)
 	}
 
 	mux := http.NewServeMux()

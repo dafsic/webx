@@ -31,7 +31,7 @@ const file_people_v1_service_proto_rawDesc = "" +
 	"\fGetChallenge\x12\x1e.people.v1.GetChallengeRequest\x1a\x1f.people.v1.GetChallengeResponse\"H\x92A\x1f\n" +
 	"\x06people\x12\x15获取登录挑战码\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/api/v1/people:getChallenge\x12v\n" +
 	"\x05Login\x12\x17.people.v1.LoginRequest\x1a\x18.people.v1.LoginResponse\":\x92A\x18\n" +
-	"\x06people\x12\x0eEIP-712 登录\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/api/v1/people:login\x12r\n" +
+	"\x06people\x12\x0eEIP-191 登录\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/api/v1/people:login\x12r\n" +
 	"\x06Logout\x12\x18.people.v1.LogoutRequest\x1a\x19.people.v1.LogoutResponse\"3\x92A\x10\n" +
 	"\x06people\x12\x06登出\x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/v1/people:logout\x12\x9c\x01\n" +
 	"\x0fCheckPermission\x12!.people.v1.CheckPermissionRequest\x1a\".people.v1.CheckPermissionResponse\"B\x92A\x16\n" +

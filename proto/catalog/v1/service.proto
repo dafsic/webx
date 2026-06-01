@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package catalog.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "catalog/v1/models.proto";
+
+option go_package = "github.com/dafsic/webx/proto_go/catalog/v1;catalogv1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Webx Catalog API";
+    version: "v1";
+    description: "酒吧菜单（菜品 + 价格）管理 gRPC + REST 接口。";
+  };
+};
+
+// CatalogService manages the bar menu items.
+service CatalogService {
+  // ListItems returns the menu. Public: customers browse without auth.
+  rpc ListItems(ListItemsRequest) returns (ListItemsResponse) {
+    option (google.api.http) = {get: "/api/v1/catalog/items"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取菜单列表"
+      tags: "catalog"
+    };
+  }
+
+  // GetItem returns a single menu item by id. Public.
+  rpc GetItem(GetItemRequest) returns (GetItemResponse) {
+    option (google.api.http) = {get: "/api/v1/catalog/items/{id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "获取单个菜品"
+      tags: "catalog"
+    };
+  }
+
+  // CreateItem adds a new menu item. Admin only.
+  rpc CreateItem(CreateItemRequest) returns (CreateItemResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/catalog/items"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "新增菜品"
+      tags: "catalog"
+    };
+  }
+
+  // UpdateItem updates an existing menu item. Admin only.
+  rpc UpdateItem(UpdateItemRequest) returns (UpdateItemResponse) {
+    option (google.api.http) = {
+      patch: "/api/v1/catalog/items/{id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "修改菜品"
+      tags: "catalog"
+    };
+  }
+
+  // DeleteItem removes a menu item. Admin only.
+  rpc DeleteItem(DeleteItemRequest) returns (DeleteItemResponse) {
+    option (google.api.http) = {delete: "/api/v1/catalog/items/{id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "删除菜品"
+      tags: "catalog"
+    };
+  }
+}

@@ -56,6 +56,18 @@ func (m *Module) Configure(a *cli.App) {
 			Usage:   "people service gRPC endpoint",
 		},
 		&cli.StringFlag{
+			Name:    "gateway-catalog-addr",
+			Value:   defaultCatalogAddr,
+			EnvVars: []string{"GATEWAY_CATALOG_ADDR"},
+			Usage:   "catalog service gRPC endpoint",
+		},
+		&cli.StringFlag{
+			Name:    "gateway-orders-addr",
+			Value:   defaultOrdersAddr,
+			EnvVars: []string{"GATEWAY_ORDERS_ADDR"},
+			Usage:   "orders service gRPC endpoint",
+		},
+		&cli.StringFlag{
 			Name:    "gateway-openapi-spec",
 			Value:   defaultOpenAPISpec,
 			EnvVars: []string{"GATEWAY_OPENAPI_SPEC"},
@@ -76,6 +88,8 @@ func (m *Module) Install(ctx app.Context) fx.Option {
 		HTTPAddr:    ctx.String("gateway-http-addr"),
 		JWTSecret:   ctx.String("gateway-jwt-secret"),
 		PeopleAddr:  ctx.String("gateway-people-addr"),
+		CatalogAddr: ctx.String("gateway-catalog-addr"),
+		OrdersAddr:  ctx.String("gateway-orders-addr"),
 		OpenAPISpec: ctx.String("gateway-openapi-spec"),
 		CORSOrigins: utils.StrSplit(ctx.String("gateway-cors-origins")),
 	}

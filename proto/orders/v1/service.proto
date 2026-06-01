@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package orders.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "orders/v1/models.proto";
+
+option go_package = "github.com/dafsic/webx/proto_go/orders/v1;ordersv1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Webx Orders API";
+    version: "v1";
+    description: "酒吧点单（下单 + 出品状态）gRPC + REST 接口。";
+  };
+};
+
+// OrderService manages customer orders.
+service OrderService {
+  // CreateOrder places a new order. Public: customers order by scanning the
+  // table QR code without logging in.
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/orders"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "下单"
+      tags: "orders"
+    };
+  }
+
+  // GetOrder returns a single order. Public: customers track their own order.
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse) {
+    option (google.api.http) = {get: "/api/v1/orders/{id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "查询订单"
+      tags: "orders"
+    };
+  }
+
+  // ListOrders returns orders, optionally filtered by status. Staff/KDS only.
+  rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse) {
+    option (google.api.http) = {get: "/api/v1/orders"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "订单列表"
+      tags: "orders"
+    };
+  }
+
+  // UpdateOrderStatus advances an order's status. Staff/KDS only.
+  rpc UpdateOrderStatus(UpdateOrderStatusRequest) returns (UpdateOrderStatusResponse) {
+    option (google.api.http) = {
+      patch: "/api/v1/orders/{id}/status"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "更新订单状态"
+      tags: "orders"
+    };
+  }
+}

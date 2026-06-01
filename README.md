@@ -300,6 +300,26 @@ Tempo datasource 启用 **Trace to logs**（按 `trace_id` 跳 Loki）和 **Logs
 
 ## 8. 部署：docker-compose
 
+### 8.0 一键启动（推荐）
+
+仓库根目录的 [docker-compose.yml](docker-compose.yml) 自带多阶段构建，**无需预先编译二进制、无需创建外部网络**，包含 `postgres` `redis` `people` `catalog` `orders` `gateway` 全套服务（各服务用独立的迁移跟踪表，启动时自动建表）：
+
+```sh
+docker compose up -d --build      # 构建并启动全部服务
+docker compose logs -f gateway    # 跟踪网关日志
+docker compose down               # 停止
+docker compose down -v            # 停止并清空数据
+```
+
+启动后访问：
+
+- `http://localhost:8080/docs` —— 聚合的 Swagger UI（people / catalog / orders）
+- `http://localhost:8080/api/v1/...` —— REST API
+
+可选：`cp .env.example .env` 覆盖 `JWT_SECRET` / `POSTGRES_PASSWORD` 等；不设置时使用内置开发默认值。
+
+> 下方 8.1~8.3 是带 Caddy + 可观测性栈的进阶拓扑（`docker/` 目录），适合贴近线上环境时使用。
+
 ### 8.1 拓扑
 
 - **业务栈** [docker/docker-compose.yml](docker/docker-compose.yml)：`caddy` `postgres` `redis` `nats` `people` `gateway`。
